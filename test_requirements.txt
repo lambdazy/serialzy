@@ -1,0 +1,4 @@
+cloudpickle>=2.1.0
+jsonpickle>=2.2.0
+pure-protobuf==2.1.1
+catboost==1.0.6

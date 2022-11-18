@@ -1,0 +1,41 @@
+name: Tests
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  all-tests:
+    runs-on: self-hosted
+    timeout-minutes: 30
+    defaults:
+      run:
+        shell: bash -l {0}
+    steps:
+      - name: "сhown for checkout"
+        run: sudo chown -R $USER:$USER /home/ubuntu/actions-runner/_work/lzy/
+
+      - name: "checkout"
+        uses: actions/checkout@v3
+
+      - name: 'python-test'
+        timeout-minutes: 10
+        run: |
+          cd serialzy/
+          ./scripts/run_tests.sh
+         
+      - name: 'upload coverage badge'
+        uses: exuanbo/actions-deploy-gist@v1
+        if: github.ref == 'refs/heads/master'
+        with:
+          token: ${{ secrets.GIST_SECRET }}
+          gist_id: 74a3e00f914bb55c0f3582a7d48e3bcd
+          file_path: serialzy/coverage.svg
+          file_type: binary
+          gist_file_name: ${{ (github.head_ref || github.ref_name) }}-coverage.svg
+      
+      - name: 'clean after python-test'
+        run: |
+          cd serialzy/
+          ./scripts/clean.sh
