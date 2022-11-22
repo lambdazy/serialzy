@@ -19,7 +19,7 @@ Deserialization example:
 
 ```python
 with open('result', 'rb') as file:
-    deserialized_obj = serializer.deserialize(file, Pool)
+    deserialized_obj = serializer.deserialize(file, type(obj))
 ```
 
 Serializers also provide data schema:
