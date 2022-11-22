@@ -36,5 +36,4 @@ jobs:
       
       - name: 'clean after python-test'
         run: |
-          cd serialzy/
           ./scripts/clean.sh
