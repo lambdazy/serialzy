@@ -26,7 +26,7 @@ jobs:
          
       - name: 'upload coverage badge'
         uses: exuanbo/actions-deploy-gist@v1
-        if: github.ref == 'refs/heads/master'
+        if: github.ref == 'refs/heads/main'
         with:
           token: ${{ secrets.GIST_SECRET }}
           gist_id: 74a3e00f914bb55c0f3582a7d48e3bcd
