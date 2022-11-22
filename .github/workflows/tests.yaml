@@ -22,7 +22,6 @@ jobs:
       - name: 'python-test'
         timeout-minutes: 10
         run: |
-          cd serialzy/
           ./scripts/run_tests.sh
          
       - name: 'upload coverage badge'
