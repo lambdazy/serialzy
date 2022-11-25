@@ -3,7 +3,7 @@ from typing import List
 import setuptools
 
 
-def read_version(path="version"):
+def read_version(path="serialzy/version/version"):
     with open(path) as file:
         return file.read().rstrip()
 
@@ -21,6 +21,9 @@ setuptools.setup(
     version=read_version(),
     author="ʎzy developers",
     install_requires=read_requirements(),
+    package_data={
+        "serialzy": ["version/version"],
+    },
     packages=[
         "serialzy",
         "serialzy/serializers"
