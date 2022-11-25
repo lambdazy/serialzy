@@ -34,13 +34,8 @@ class CatboostPoolSerializationTests(TestCase):
         self.assertIn("catboost", serializer.meta())
 
     def test_schema(self):
-        pool = Pool(
-            data=[[1, 4, 5, 6], [4, 5, 6, 7], [30, 40, 50, 60]],
-            label=[1, 1, -1],
-            weight=[0.1, 0.2, 0.3],
-        )
-        serializer = self.registry.find_serializer_by_type(type(pool))
-        schema = serializer.schema(type(pool))
+        serializer = self.registry.find_serializer_by_data_format('catboost.core.Pool')
+        schema = serializer.schema(Pool)
 
         self.assertEqual('catboost.core.Pool', schema.data_format)
         self.assertEqual('serialzy_python_type_reference', schema.schema_format)
@@ -48,12 +43,7 @@ class CatboostPoolSerializationTests(TestCase):
         self.assertTrue('catboost' in schema.meta)
 
     def test_resolve(self):
-        pool = Pool(
-            data=[[1, 4, 5, 6], [4, 5, 6, 7], [30, 40, 50, 60]],
-            label=[1, 1, -1],
-            weight=[0.1, 0.2, 0.3],
-        )
-        serializer = self.registry.find_serializer_by_type(type(pool))
+        serializer = self.registry.find_serializer_by_data_format('catboost.core.Pool')
 
         typ = serializer.resolve(
             Schema('catboost.core.Pool', 'serialzy_python_type_reference', json.dumps({

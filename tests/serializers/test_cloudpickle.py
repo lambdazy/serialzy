@@ -1,7 +1,9 @@
 import tempfile
 from dataclasses import dataclass
+from pickle import UnpicklingError
 from unittest import TestCase
 
+# noinspection PyPackageRequirements
 import cloudpickle
 from pure_protobuf.dataclasses_ import field, message
 from pure_protobuf.types import int32
@@ -10,11 +12,11 @@ from serialzy.api import Schema, StandardDataFormats, StandardSchemaFormats
 from serialzy.registry import DefaultSerializerRegistry
 
 
-class CatboostSerializationTests(TestCase):
+class CloudpickleSerializationTests(TestCase):
     def setUp(self):
         self.registry = DefaultSerializerRegistry()
 
-    def test_cloudpickle_serializer(self):
+    def test_serializer(self):
         class B:
             def __init__(self, x: int):
                 self.x = x
@@ -30,29 +32,29 @@ class CatboostSerializationTests(TestCase):
 
         self.assertEqual(b.x, deserialized.x)
         self.assertFalse(serializer.stable())
-        self.assertIn("cloudpickle", serializer.meta())
 
-    def test_cloudpickle_schema(self):
+    def test_schema(self):
         class B:
             def __init__(self, x: int):
                 self.x = x
 
         serializer = self.registry.find_serializer_by_type(B)
-        b = B(42)
-        schema = serializer.schema(type(b))
+        schema = serializer.schema(B)
 
         self.assertEqual(StandardDataFormats.pickle.name, schema.data_format)
         self.assertEqual(StandardSchemaFormats.pickled_type.name, schema.schema_format)
+        self.assertTrue(len(schema.schema_content) > 0)
+        self.assertIn("cloudpickle", serializer.meta())
 
-        deserializer = self.registry.find_serializer_by_data_format(schema.data_format)
-        with tempfile.TemporaryFile() as file:
-            serializer.serialize(b, file)
-            file.flush()
-            file.seek(0)
-            deserialized = deserializer.deserialize(file, B)
-        self.assertEqual(b.x, deserialized.x)
+    def test_resolve(self):
+        class B:
+            def __init__(self, x: int):
+                self.x = x
 
-        typ = deserializer.resolve(schema)
+        serializer = self.registry.find_serializer_by_data_format(StandardDataFormats.pickle.name)
+        schema = serializer.schema(B)
+
+        typ = serializer.resolve(schema)
         self.assertEqual(B.__module__, typ.__module__)
         self.assertEqual(B.__name__, typ.__name__)
 
@@ -61,7 +63,8 @@ class CatboostSerializationTests(TestCase):
                 Schema(
                     StandardDataFormats.proto.name,
                     StandardSchemaFormats.pickled_type.name,
-                    "content"
+                    schema.schema_content,
+                    {'cloudpickle': '0.0.0'}
                 )
             )
         with self.assertRaisesRegex(ValueError, "Invalid schema format*"):
@@ -69,9 +72,26 @@ class CatboostSerializationTests(TestCase):
                 Schema(
                     StandardDataFormats.pickle.name,
                     StandardSchemaFormats.json_pickled_type.name,
-                    "content"
+                    schema.schema_content,
+                    {'cloudpickle': '0.0.0'}
                 )
             )
+
+        with self.assertRaises(UnpicklingError):
+            serializer.resolve(
+                Schema(StandardDataFormats.pickle.name, StandardSchemaFormats.pickled_type.name, 'data',
+                       {'cloudpickle': '0.0.0'}))
+
+        with self.assertLogs() as cm:
+            serializer.resolve(
+                Schema(StandardDataFormats.pickle.name, StandardSchemaFormats.pickled_type.name, schema.schema_content,
+                       {'cloudpickle': '10000.0.0'}))
+            self.assertRegex(cm.output[0], 'WARNING:serialzy.base:Installed version of cloudpickle*')
+
+        with self.assertLogs() as cm:
+            serializer.resolve(
+                Schema(StandardDataFormats.pickle.name, StandardSchemaFormats.pickled_type.name, schema.schema_content))
+            self.assertRegex(cm.output[0], 'WARNING:serialzy.base:No cloudpickle version in meta*')
 
     def test_unpickled_message_keeps_subclass(self):
         @message

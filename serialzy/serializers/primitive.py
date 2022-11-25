@@ -1,6 +1,6 @@
 import logging
 from typing import Any, BinaryIO, Callable, Dict, Type, Union, cast
-from packaging import version # type: ignore
+from packaging import version  # type: ignore
 
 from serialzy.api import (
     Schema,
@@ -60,7 +60,7 @@ class PrimitiveSerializer(Serializer):
         import jsonpickle  # type: ignore
         self._validate_schema(schema)
         if schema.schema_format != StandardSchemaFormats.json_pickled_type.name:
-            raise ValueError('PrimitiveSerializer supports only jsonpickle schema format')
+            raise ValueError(f'Invalid schema format {schema.schema_format}')
         if 'jsonpickle' not in schema.meta:
             _LOG.warning('No jsonpickle version in meta')
         elif version.parse(schema.meta['jsonpickle']) > version.parse(cached_installed_packages["jsonpickle"]):
