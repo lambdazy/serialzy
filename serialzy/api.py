@@ -21,13 +21,14 @@ class StandardDataFormats(Enum):
 class StandardSchemaFormats(Enum):
     pickled_type = "pickled_type"
     json_pickled_type = "json_pickled_type"
+    no_schema = "no_schema"
 
 
 @dataclass
 class Schema:
     data_format: str
     schema_format: str
-    schema_content: str
+    schema_content: str = ''
     meta: Dict[str, str] = field(default_factory=lambda: {})
 
 
