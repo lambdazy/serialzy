@@ -9,4 +9,5 @@ rm -rvf *.egg-info dist/ build/
 rm -rvf .mypy_cache test_output
 
 # coverage report
-[ ! -v 2 ] || rm -vf ./.coverage ./coverage.svg
+rm -vf ./.coverage ./coverage.svg
+rm -rvf htmlcov
