@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from pickle import UnpicklingError
+from typing import Optional
 from unittest import TestCase
 
 from pure_protobuf.dataclasses_ import field, message
@@ -46,6 +47,17 @@ class ProtoSerializationTests(TestCase):
         self.assertTrue(len(schema.schema_content) > 0)
         self.assertTrue('pure-protobuf' in schema.meta)
         self.assertTrue('cloudpickle' in schema.meta)
+
+    def test_supported_types(self):
+        @message
+        @dataclass
+        class TestMessage:
+            a: int32 = field(1, default=0)
+
+        serializer = self.registry.find_serializer_by_data_format(StandardDataFormats.proto.name)
+        self.assertFalse(serializer.supported_types()(Optional[str]))
+        self.assertFalse(serializer.supported_types()(str))
+        self.assertTrue(serializer.supported_types()(TestMessage))
 
     def test_resolve(self):
         @message
