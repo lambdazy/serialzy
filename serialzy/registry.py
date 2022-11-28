@@ -9,11 +9,11 @@ from serialzy.serializers.primitive import PrimitiveSerializer
 from serialzy.serializers.proto import ProtoMessageSerializer
 from serialzy.serializers.cloudpickle import CloudpickleSerializer
 
+_LOG = logging.getLogger(__name__)
+
 
 class DefaultSerializerRegistry(SerializerRegistry):
     def __init__(self):
-        self._log = logging.getLogger(str(self.__class__))
-
         self._default_priority = sys.maxsize - 10
         self._type_registry: Dict[Type, Serializer] = {}
         self._type_name_registry: Dict[Type, str] = {}
@@ -39,16 +39,17 @@ class DefaultSerializerRegistry(SerializerRegistry):
         )
 
     def register_serializer(
-        self, name: str, serializer: Serializer, priority: Optional[int] = None
+            self, name: str, serializer: Serializer, priority: Optional[int] = None
     ) -> None:
         if not serializer.available():
-            self._log.warning(f"Serializer {name} cannot be registered")
+            _LOG.debug(f"Serializer {name} cannot be registered")
             return
 
         if name in self._serializer_priorities:
             raise ValueError(f"Serializer {name} has been already registered")
 
-        if isinstance(serializer.supported_types(), Type) and serializer.supported_types() in self._type_registry:  # type: ignore
+        if isinstance(serializer.supported_types(),
+                      Type) and serializer.supported_types() in self._type_registry:  # type: ignore
             raise ValueError(
                 f"Serializer for type {serializer.supported_types()} has been already registered"
             )
@@ -78,10 +79,10 @@ class DefaultSerializerRegistry(SerializerRegistry):
         filter_ser_priority = sys.maxsize
         for name, serializer in self._name_registry.items():
             if (
-                # mypy issue: https://github.com/python/mypy/issues/3060
-                not isinstance(serializer.supported_types(), Type)  # type: ignore
-                and serializer.supported_types()(typ)
-                and self._serializer_priorities[name] < filter_ser_priority
+                    # mypy issue: https://github.com/python/mypy/issues/3060
+                    not isinstance(serializer.supported_types(), Type)  # type: ignore
+                    and serializer.supported_types()(typ)
+                    and self._serializer_priorities[name] < filter_ser_priority
             ):
                 filter_ser_priority = self._serializer_priorities[name]
                 filter_ser = serializer
