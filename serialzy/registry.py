@@ -1,13 +1,14 @@
+import inspect
 import logging
 import sys
 from collections import OrderedDict, defaultdict
+from types import ModuleType
 from typing import Dict, List, Optional, Type, cast
 
+import serialzy.serializers.stable
+import serialzy.serializers.unstable
 from serialzy.api import Serializer, SerializerRegistry
-from serialzy.serializers.catboost import CatboostPoolSerializer
-from serialzy.serializers.primitive import PrimitiveSerializer
-from serialzy.serializers.proto import ProtoMessageSerializer
-from serialzy.serializers.cloudpickle import CloudpickleSerializer
+from serialzy.utils import load_all_modules_from
 
 _LOG = logging.getLogger(__name__)
 
@@ -15,28 +16,18 @@ _LOG = logging.getLogger(__name__)
 class DefaultSerializerRegistry(SerializerRegistry):
     def __init__(self):
         self._default_priority = sys.maxsize - 10
+        self._default_priority_unstable = sys.maxsize - 1
         self._type_registry: Dict[Type, Serializer] = {}
         self._type_name_registry: Dict[Type, str] = {}
         self._name_registry: Dict[str, Serializer] = OrderedDict()
         self._data_formats_name_registry: Dict[str, List[str]] = defaultdict(list)
         self._serializer_priorities: Dict[str, int] = {}
 
-        self.register_serializer(
-            "SERIALZY_CATBOOST_POOL_SERIALIZER",
-            CatboostPoolSerializer(),
-            self._default_priority,
-        )
-        self.register_serializer(
-            "SERIALZY_PROTO_MESSAGE_SERIALIZER",
-            ProtoMessageSerializer(),
-            self._default_priority,
-        )
-        self.register_serializer(
-            "SERIALZY_PRIMITIVE_SERIALIZER", PrimitiveSerializer(), self._default_priority
-        )
-        self.register_serializer(
-            "SERIALZY_CLOUDPICKLE_SERIALIZER", CloudpickleSerializer(), sys.maxsize - 1
-        )
+        load_all_modules_from(serialzy.serializers.stable)
+        load_all_modules_from(serialzy.serializers.unstable)
+
+        self._register_serializers_from(serialzy.serializers.stable, self._default_priority)
+        self._register_serializers_from(serialzy.serializers.unstable, self._default_priority_unstable)
 
     def register_serializer(
             self, name: str, serializer: Serializer, priority: Optional[int] = None
@@ -123,3 +114,15 @@ class DefaultSerializerRegistry(SerializerRegistry):
                 serializer = self._name_registry[name]
                 serializer_priority = self._serializer_priorities[name]
         return serializer
+
+    def _register_serializers_from(self, module: ModuleType, priority: int) -> None:
+        stable_serializer_modules = dir(module)
+        for module_attr in stable_serializer_modules:
+            module_value = getattr(module, module_attr)
+            if isinstance(module_value, ModuleType):
+                stable_serializers = dir(module_value)
+                for class_attr in stable_serializers:
+                    class_value = getattr(module_value, class_attr)
+                    if inspect.isclass(class_value) and not inspect.isabstract(class_value) and issubclass(class_value,
+                                                                                                           Serializer):
+                        self.register_serializer("Serialzy" + class_value.__name__, class_value(), priority)

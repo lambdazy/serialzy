@@ -144,7 +144,7 @@ class SerializationRegistryTests(TestCase):
     def test_resolve_serializer_name(self):
         serializer = self.registry.find_serializer_by_type(A)
         name = self.registry.resolve_name(serializer)
-        self.assertEqual("SERIALZY_CLOUDPICKLE_SERIALIZER", name)
+        self.assertEqual("SerialzyCloudpickleSerializer", name)
 
         unused = generate_serializer()()
         self.assertIsNone(self.registry.resolve_name(unused))

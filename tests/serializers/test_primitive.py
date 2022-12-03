@@ -1,6 +1,4 @@
-import tempfile
 from json import JSONDecodeError
-from typing import Type
 from unittest import TestCase
 
 from serialzy.api import Schema, StandardDataFormats, StandardSchemaFormats
@@ -82,7 +80,7 @@ class PrimitiveSerializationTests(TestCase):
                     {'jsonpickle': '10000.0.0'}
                 )
             )
-            self.assertRegex(cm.output[0], 'WARNING:serialzy.serializers.primitive:Installed version of jsonpickle*')
+            self.assertRegex(cm.output[0], 'WARNING:serialzy.serializers.stable.primitive:Installed version of jsonpickle*')
 
         with self.assertLogs() as cm:
             serializer.resolve(
@@ -93,4 +91,4 @@ class PrimitiveSerializationTests(TestCase):
                     {}
                 )
             )
-            self.assertRegex(cm.output[0], 'WARNING:serialzy.serializers.primitive:No jsonpickle version in meta*')
+            self.assertRegex(cm.output[0], 'WARNING:serialzy.serializers.stable.primitive:No jsonpickle version in meta*')

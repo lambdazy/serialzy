@@ -100,10 +100,10 @@ class ProtoSerializationTests(TestCase):
             serializer.resolve(
                 Schema(StandardDataFormats.proto.name, StandardSchemaFormats.pickled_type.name, schema.schema_content,
                        {'cloudpickle': '0.0.0', 'pure-protobuf': '10000.0.0'}))
-            self.assertRegex(cm.output[0], 'WARNING:serialzy.serializers.proto:Installed version of pure-protobuf*')
+            self.assertRegex(cm.output[0], 'WARNING:serialzy.serializers.stable.proto:Installed version of pure-protobuf*')
 
         with self.assertLogs() as cm:
             serializer.resolve(
                 Schema(StandardDataFormats.proto.name, StandardSchemaFormats.pickled_type.name, schema.schema_content,
                        {'cloudpickle': '0.0.0'}))
-            self.assertRegex(cm.output[0], 'WARNING:serialzy.serializers.proto:No pure-protobuf version in meta*')
+            self.assertRegex(cm.output[0], 'WARNING:serialzy.serializers.stable.proto:No pure-protobuf version in meta*')
