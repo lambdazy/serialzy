@@ -27,7 +27,7 @@ class PrimitiveSerializer(Serializer):
         return cast(T, jsonpickle.loads(read))
 
     def supported_types(self) -> Union[Type, Callable[[Type], bool]]:
-        return lambda t: t in [int, float, str, bool]
+        return lambda t: t in [int, float, str, bool, type(None)]
 
     def available(self) -> bool:
         # noinspection PyBroadException

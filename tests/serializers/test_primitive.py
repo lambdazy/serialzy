@@ -12,16 +12,24 @@ class PrimitiveSerializationTests(TestCase):
 
     def test_serialization(self):
         var = 10
-        self.assertEqual(var, serialized_and_deserialized(self.registry, var))
+        serializer = self.registry.find_serializer_by_type(type(var))
+        self.assertEqual(var, serialized_and_deserialized(serializer, var))
 
         var = 0.0001
-        self.assertEqual(var, serialized_and_deserialized(self.registry, var))
+        serializer = self.registry.find_serializer_by_type(type(var))
+        self.assertEqual(var, serialized_and_deserialized(serializer, var))
 
         var = "str"
-        self.assertEqual(var, serialized_and_deserialized(self.registry, var))
+        serializer = self.registry.find_serializer_by_type(type(var))
+        self.assertEqual(var, serialized_and_deserialized(serializer, var))
 
         var = True
-        self.assertEqual(var, serialized_and_deserialized(self.registry, var))
+        serializer = self.registry.find_serializer_by_type(type(var))
+        self.assertEqual(var, serialized_and_deserialized(serializer, var))
+
+        var = None
+        serializer = self.registry.find_serializer_by_type(type(var))
+        self.assertEqual(var, serialized_and_deserialized(serializer, var))
 
     def test_schema(self):
         serializer = self.registry.find_serializer_by_data_format(StandardDataFormats.primitive_type.name)
@@ -33,6 +41,9 @@ class PrimitiveSerializationTests(TestCase):
         self.assertEqual(StandardSchemaFormats.json_pickled_type.name, schema.schema_format)
         self.assertEqual('{"py/type": "builtins.int"}', schema.schema_content)
         self.assertTrue('jsonpickle' in schema.meta)
+
+        schema = serializer.schema(type(None))
+        self.assertEqual('{"py/type": "builtins.NoneType"}', schema.schema_content)
 
     def test_resolve(self):
         serializer = self.registry.find_serializer_by_data_format(StandardDataFormats.primitive_type.name)

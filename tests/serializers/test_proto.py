@@ -25,11 +25,9 @@ class ProtoSerializationTests(TestCase):
             a: int32 = field(1, default=0)
 
         test_message = TestMessage(42)
-        self.assertEqual(
-            test_message.a, serialized_and_deserialized(self.registry, test_message).a
-        )
-
         serializer = self.registry.find_serializer_by_type(type(test_message))
+
+        self.assertEqual(test_message.a, serialized_and_deserialized(serializer, test_message).a)
         self.assertTrue(serializer.stable())
         self.assertIn("pure-protobuf", serializer.meta())
 
@@ -100,10 +98,12 @@ class ProtoSerializationTests(TestCase):
             serializer.resolve(
                 Schema(StandardDataFormats.proto.name, StandardSchemaFormats.pickled_type.name, schema.schema_content,
                        {'cloudpickle': '0.0.0', 'pure-protobuf': '10000.0.0'}))
-            self.assertRegex(cm.output[0], 'WARNING:serialzy.serializers.stable.proto:Installed version of pure-protobuf*')
+            self.assertRegex(cm.output[0],
+                             'WARNING:serialzy.serializers.stable.proto:Installed version of pure-protobuf*')
 
         with self.assertLogs() as cm:
             serializer.resolve(
                 Schema(StandardDataFormats.proto.name, StandardSchemaFormats.pickled_type.name, schema.schema_content,
                        {'cloudpickle': '0.0.0'}))
-            self.assertRegex(cm.output[0], 'WARNING:serialzy.serializers.stable.proto:No pure-protobuf version in meta*')
+            self.assertRegex(cm.output[0],
+                             'WARNING:serialzy.serializers.stable.proto:No pure-protobuf version in meta*')
