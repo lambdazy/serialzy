@@ -1,6 +1,10 @@
 import tempfile
+from dataclasses import dataclass
 from typing import Optional, Union
 from unittest import TestCase
+
+from pure_protobuf.dataclasses_ import message, field
+from pure_protobuf.types import int32
 
 from serialzy.api import Schema
 from serialzy.registry import DefaultSerializerRegistry
@@ -95,3 +99,56 @@ class UnionSerializationTests(TestCase):
         self.assertEqual("serialzy_union", serializer.data_format())
         self.assertTrue("serialzy" in serializer.meta())
         self.assertTrue(serializer.stable())
+
+        typ = Union[str, B]
+        to_remove = self.registry.find_serializer_by_type(B)
+        self.registry.unregister_serializer(to_remove)
+
+        serializer = self.registry.find_serializer_by_type(typ)
+        self.assertIsNone(serializer)
+
+    def test_deserialize_with_type(self):
+        @message
+        @dataclass
+        class TestMessage:
+            a: int32 = field(1, default=0)
+
+        @message
+        @dataclass
+        class TestMessage2:
+            a: int32 = field(1, default=0)
+            b: int32 = field(2, default=1)
+
+        typ = Optional[TestMessage]
+        serializer = self.registry.find_serializer_by_type(typ)
+        # noinspection DuplicatedCode
+        with tempfile.TemporaryFile() as file:
+            obj = TestMessage(5)
+            serializer.serialize(obj, file)
+            file.flush()
+            file.seek(0)
+            deserialized = serializer.deserialize(file, TestMessage2)
+
+        self.assertTrue(isinstance(obj, TestMessage))
+        self.assertTrue(isinstance(deserialized, TestMessage2))
+
+        self.assertEqual(obj.a, deserialized.a)
+        self.assertEqual(1, deserialized.b)
+
+        # removing proto serializer
+        to_remove = self.registry.find_serializer_by_type(TestMessage)
+        self.registry.unregister_serializer(to_remove)
+        # removing cloudpickle serializer
+        to_remove = self.registry.find_serializer_by_type(TestMessage)
+        self.registry.unregister_serializer(to_remove)
+
+        with tempfile.TemporaryFile() as file:
+            obj = TestMessage(5)
+            with self.assertRaisesRegex(ValueError, "Cannot find serializer for type*"):
+                serializer.serialize(obj, file)
+
+            file.flush()
+            file.seek(0)
+
+            with self.assertRaisesRegex(ValueError, "Cannot find serializer for type*"):
+                serializer.deserialize(file, TestMessage2)

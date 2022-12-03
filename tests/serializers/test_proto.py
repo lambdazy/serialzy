@@ -1,3 +1,4 @@
+import tempfile
 from dataclasses import dataclass
 from pickle import UnpicklingError
 from typing import Optional
@@ -30,6 +31,32 @@ class ProtoSerializationTests(TestCase):
         self.assertEqual(test_message.a, serialize_and_deserialize(serializer, test_message).a)
         self.assertTrue(serializer.stable())
         self.assertIn("pure-protobuf", serializer.meta())
+
+    def test_proto_serialization_new_type(self):
+        @message
+        @dataclass
+        class TestMessage:
+            a: int32 = field(1, default=0)
+
+        @message
+        @dataclass
+        class TestMessage2:
+            a: int32 = field(1, default=0)
+            b: int32 = field(2, default=1)
+
+        serializer = self.registry.find_serializer_by_data_format(StandardDataFormats.proto.name)
+        with tempfile.TemporaryFile() as file:
+            obj = TestMessage(5)
+            serializer.serialize(obj, file)
+            file.flush()
+            file.seek(0)
+            deserialized = serializer.deserialize(file, TestMessage2)
+
+        self.assertTrue(isinstance(obj, TestMessage))
+        self.assertTrue(isinstance(deserialized, TestMessage2))
+
+        self.assertEqual(obj.a, deserialized.a)
+        self.assertEqual(1, deserialized.b)
 
     def test_schema(self):
         @message
