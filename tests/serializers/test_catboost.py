@@ -1,16 +1,16 @@
 import json
-import tempfile
 from json import JSONDecodeError
 from unittest import TestCase
 
 # noinspection PyPackageRequirements
-from catboost import Pool, CatBoostRegressor, CatBoostRanker, CatBoostClassifier
-# noinspection PyPackageRequirements
 import numpy
+# noinspection PyPackageRequirements
+from catboost import Pool, CatBoostRegressor, CatBoostRanker, CatBoostClassifier
 
 from serialzy.api import Schema
-from serialzy.serializers.stable.catboost import CatboostPoolSerializer, CatboostModelSerializer
 from serialzy.registry import DefaultSerializerRegistry
+from serialzy.serializers.stable.catboost import CatboostPoolSerializer, CatboostModelSerializer
+from tests.serializers.utils import serialize_and_deserialize
 
 
 class CatboostPoolSerializationTests(TestCase):
@@ -24,11 +24,7 @@ class CatboostPoolSerializationTests(TestCase):
             weight=[0.1, 0.2, 0.3],
         )
         serializer = self.registry.find_serializer_by_type(type(pool))
-        with tempfile.TemporaryFile() as file:
-            serializer.serialize(pool, file)
-            file.flush()
-            file.seek(0)
-            deserialized_pool = serializer.deserialize(file, Pool)
+        deserialized_pool = serialize_and_deserialize(serializer, pool)
 
         self.assertTrue(isinstance(serializer, CatboostPoolSerializer))
         self.assertEqual(pool.get_weight(), deserialized_pool.get_weight())
@@ -114,11 +110,7 @@ class CatboostModelSerializationTests(TestCase):
         model.fit(train_data, train_labels)
 
         serializer = self.registry.find_serializer_by_type(type(model))
-        with tempfile.TemporaryFile() as file:
-            serializer.serialize(model, file)
-            file.flush()
-            file.seek(0)
-            deserialized_model = serializer.deserialize(file, type(model))
+        deserialized_model = serialize_and_deserialize(serializer, model)
 
         self.assertTrue(isinstance(serializer, CatboostModelSerializer))
         numpy.testing.assert_array_equal(model.get_leaf_weights(), deserialized_model.get_leaf_weights())

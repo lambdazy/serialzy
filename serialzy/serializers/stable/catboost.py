@@ -46,7 +46,7 @@ class CatboostBaseSerializer(DefaultSchemaSerializerByReference, ABC):
 
 # noinspection PyPackageRequirements
 class CatboostPoolSerializer(CatboostBaseSerializer):
-    def serialize(self, obj: T, dest: BinaryIO) -> None:
+    def _serialize(self, obj: T, dest: BinaryIO) -> None:
         with tempfile.NamedTemporaryFile() as handle:
             if not obj.is_quantized():  # type: ignore
                 obj.quantize()  # type: ignore
@@ -57,7 +57,7 @@ class CatboostPoolSerializer(CatboostBaseSerializer):
                     break
                 dest.write(data)
 
-    def deserialize(self, source: BinaryIO, typ: Type[T]) -> T:
+    def _deserialize(self, source: BinaryIO, typ: Type[T]) -> T:
         with tempfile.NamedTemporaryFile() as handle:
             while True:
                 data = source.read(8096)
@@ -81,7 +81,7 @@ class CatboostPoolSerializer(CatboostBaseSerializer):
 
 # noinspection PyPackageRequirements
 class CatboostModelSerializer(CatboostBaseSerializer):
-    def serialize(self, obj: T, dest: BinaryIO) -> None:
+    def _serialize(self, obj: T, dest: BinaryIO) -> None:
         with tempfile.NamedTemporaryFile() as handle:
             obj.save_model(handle.name, format=self.data_format())  # type: ignore
             while True:
@@ -90,7 +90,7 @@ class CatboostModelSerializer(CatboostBaseSerializer):
                     break
                 dest.write(data)
 
-    def deserialize(self, source: BinaryIO, typ: Type[T]) -> T:
+    def _deserialize(self, source: BinaryIO, typ: Type[T]) -> T:
         with tempfile.NamedTemporaryFile() as handle:
             while True:
                 data = source.read(8096)

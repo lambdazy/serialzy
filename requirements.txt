@@ -1,1 +1,2 @@
 packaging>=21.3
+typing-extensions>=4.4.0

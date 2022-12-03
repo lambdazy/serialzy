@@ -12,11 +12,11 @@ _LOG = logging.getLogger(__name__)
 
 # noinspection PyMethodMayBeStatic, PyPackageRequirements
 class CloudpickleSerializer(DefaultSchemaSerializerByValue):
-    def serialize(self, obj: Any, dest: BinaryIO) -> None:
+    def _serialize(self, obj: Any, dest: BinaryIO) -> None:
         import cloudpickle  # type: ignore
         cloudpickle.dump(obj, dest)
 
-    def deserialize(self, source: BinaryIO, typ: Type) -> Any:
+    def _deserialize(self, source: BinaryIO, typ: Type) -> Any:
         import cloudpickle  # type: ignore
         return cloudpickle.load(source)
 

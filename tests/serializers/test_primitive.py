@@ -3,7 +3,7 @@ from unittest import TestCase
 
 from serialzy.api import Schema, StandardDataFormats, StandardSchemaFormats
 from serialzy.registry import DefaultSerializerRegistry
-from tests.serializers.utils import serialized_and_deserialized
+from tests.serializers.utils import serialize_and_deserialize
 
 
 class PrimitiveSerializationTests(TestCase):
@@ -11,25 +11,22 @@ class PrimitiveSerializationTests(TestCase):
         self.registry = DefaultSerializerRegistry()
 
     def test_serialization(self):
+        serializer = self.registry.find_serializer_by_data_format(StandardDataFormats.primitive_type.name)
+
         var = 10
-        serializer = self.registry.find_serializer_by_type(type(var))
-        self.assertEqual(var, serialized_and_deserialized(serializer, var))
+        self.assertEqual(var, serialize_and_deserialize(serializer, var))
 
         var = 0.0001
-        serializer = self.registry.find_serializer_by_type(type(var))
-        self.assertEqual(var, serialized_and_deserialized(serializer, var))
+        self.assertEqual(var, serialize_and_deserialize(serializer, var))
 
         var = "str"
-        serializer = self.registry.find_serializer_by_type(type(var))
-        self.assertEqual(var, serialized_and_deserialized(serializer, var))
+        self.assertEqual(var, serialize_and_deserialize(serializer, var))
 
         var = True
-        serializer = self.registry.find_serializer_by_type(type(var))
-        self.assertEqual(var, serialized_and_deserialized(serializer, var))
+        self.assertEqual(var, serialize_and_deserialize(serializer, var))
 
         var = None
-        serializer = self.registry.find_serializer_by_type(type(var))
-        self.assertEqual(var, serialized_and_deserialized(serializer, var))
+        self.assertEqual(var, serialize_and_deserialize(serializer, var))
 
     def test_schema(self):
         serializer = self.registry.find_serializer_by_data_format(StandardDataFormats.primitive_type.name)
@@ -52,6 +49,12 @@ class PrimitiveSerializationTests(TestCase):
             '{"py/type": "builtins.str"}', {'jsonpickle': '0.0.0'}
         ))
         self.assertEqual(str, typ)
+
+        typ = serializer.resolve(Schema(
+            StandardDataFormats.primitive_type.name, StandardSchemaFormats.json_pickled_type.name,
+            '{"py/type": "builtins.NoneType"}', {'jsonpickle': '0.0.0'}
+        ))
+        self.assertEqual(type(None), typ)
 
         with self.assertRaisesRegex(ValueError, "Invalid data format*"):
             serializer.resolve(

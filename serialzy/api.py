@@ -1,8 +1,10 @@
 import abc
+import dataclasses
+import json
 import logging
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, BinaryIO, Callable, Dict, Optional, Type, TypeVar, Union
+from typing import Any, BinaryIO, Callable, Dict, Optional, Type, TypeVar, Union, cast
 
 from packaging import version  # type: ignore
 
@@ -33,7 +35,6 @@ class Schema:
 
 
 class Serializer(abc.ABC):
-    @abc.abstractmethod
     def serialize(self, obj: Any, dest: BinaryIO) -> None:
         """
         :param obj: object to serialize into bytes
@@ -41,8 +42,38 @@ class Serializer(abc.ABC):
         :return: None
         """
 
+        # write schema header
+        self._write_schema(type(obj), dest)
+
+        # write serialized data
+        self._serialize(obj, dest)
+
     @abc.abstractmethod
-    def deserialize(self, source: BinaryIO, typ: Type[T]) -> T:
+    def _serialize(self, obj: Any, dest: BinaryIO) -> None:
+        """
+        :param obj: object to serialize into bytes
+        :param dest: serialized obj is written into dest
+        :return: None
+        """
+
+    def deserialize(self, source: BinaryIO, typ: Optional[Type[T]] = None) -> T:
+        """
+        :param source: buffer of file with serialized data
+        :param typ: type of the resulting object, fetched from the header if None
+        :return: deserialized object
+        """
+
+        # read schema header
+        if typ is None:
+            typ = self._deserialize_type(source)
+        else:
+            self._skip_header(source)
+
+        # read serialized data
+        return self._deserialize(source, cast(Type[T], typ))
+
+    @abc.abstractmethod
+    def _deserialize(self, source: BinaryIO, typ: Type[T]) -> T:
         """
         :param source: buffer of file with serialized data
         :param typ: type of the resulting object
@@ -99,47 +130,48 @@ class Serializer(abc.ABC):
                 f"Invalid data format {schema.data_format}, expected {self.data_format()}"
             )
 
+    def _deserialize_type(self, source: BinaryIO) -> Type:
+        header_len = int.from_bytes(source.read(8), byteorder='big', signed=False)
+        schema_json = source.read(header_len).decode('utf-8')
+        schema = Schema(**json.loads(schema_json))
+        typ = self.resolve(schema)
+        return typ
+
+    @staticmethod
+    def _skip_header(source: BinaryIO) -> None:
+        header_len = int.from_bytes(source.read(8), byteorder='big', signed=False)
+        source.read(header_len)
+
+    def _write_schema(self, typ: Type, dest: BinaryIO) -> None:
+        schema = self.schema(typ)
+        schema_json = json.dumps(dataclasses.asdict(schema))
+        schema_bytes = schema_json.encode('utf-8')
+        header_len = len(schema_bytes)
+        dest.write(header_len.to_bytes(length=8, byteorder='big', signed=False))
+        dest.write(schema_bytes)
+
 
 class SerializerRegistry(abc.ABC):
     @abc.abstractmethod
-    def register_serializer(
-            self, name: str, serializer: Serializer, priority: Optional[int] = None
-    ) -> None:
+    def register_serializer(self, serializer: Serializer, priority: Optional[int] = None) -> None:
         """
-        :param name: unique serializer's name
         :param serializer: serializer to register
         :param priority: number that indicates serializer's priority: 0 - max priority
         :return: None
         """
 
     @abc.abstractmethod
-    def unregister_serializer(self, name: str) -> None:
+    def unregister_serializer(self, serializer: Serializer) -> None:
         """
-        :param name: name of the serializer to unregister
+        :param serializer: serializer to unregister
         :return:
         """
 
     @abc.abstractmethod
-    def find_serializer_by_type(
-            self, typ: Type
-    ) -> Serializer:  # we assume that default serializer always can be found
+    def find_serializer_by_type(self, typ: Type) -> Optional[Serializer]:
         """
         :param typ: python Type needed to serialize
-        :return: corresponding serializer
-        """
-
-    @abc.abstractmethod
-    def find_serializer_by_name(self, serializer_name: str) -> Optional[Serializer]:
-        """
-        :param serializer_name: target name
-        :return: Serializer registered with serializer_name or None
-        """
-
-    @abc.abstractmethod
-    def resolve_name(self, serializer: Serializer) -> Optional[str]:
-        """
-        :param serializer: serializer to resolve name
-        :return: name if the serializer is registered, None otherwise
+        :return: corresponding serializer or None
         """
 
     @abc.abstractmethod

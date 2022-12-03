@@ -8,7 +8,7 @@ from pure_protobuf.types import int32
 
 from serialzy.api import StandardDataFormats, StandardSchemaFormats, Schema
 from serialzy.registry import DefaultSerializerRegistry
-from tests.serializers.utils import serialized_and_deserialized
+from tests.serializers.utils import serialize_and_deserialize
 
 
 # noinspection PyPackageRequirements
@@ -27,7 +27,7 @@ class ProtoSerializationTests(TestCase):
         test_message = TestMessage(42)
         serializer = self.registry.find_serializer_by_type(type(test_message))
 
-        self.assertEqual(test_message.a, serialized_and_deserialized(serializer, test_message).a)
+        self.assertEqual(test_message.a, serialize_and_deserialize(serializer, test_message).a)
         self.assertTrue(serializer.stable())
         self.assertIn("pure-protobuf", serializer.meta())
 

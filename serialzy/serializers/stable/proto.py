@@ -12,10 +12,10 @@ _LOG = logging.getLogger(__name__)
 
 # noinspection PyMethodMayBeStatic
 class ProtoMessageSerializer(DefaultSchemaSerializerByValue):
-    def serialize(self, obj: Any, dest: BinaryIO) -> None:
+    def _serialize(self, obj: Any, dest: BinaryIO) -> None:
         obj.dump(dest)
 
-    def deserialize(self, source: BinaryIO, typ: Type) -> Any:
+    def _deserialize(self, source: BinaryIO, typ: Type) -> Any:
         from pure_protobuf.dataclasses_ import load  # type: ignore
 
         # noinspection PyTypeChecker
