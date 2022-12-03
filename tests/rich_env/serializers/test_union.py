@@ -8,7 +8,7 @@ from pure_protobuf.types import int32
 
 from serialzy.api import Schema
 from serialzy.registry import DefaultSerializerRegistry
-from tests.serializers.utils import serialize_and_deserialize
+from tests.rich_env.serializers.utils import serialize_and_deserialize
 
 
 class UnionSerializationTests(TestCase):

@@ -3,7 +3,7 @@ from unittest import TestCase
 
 from serialzy.api import Schema, StandardDataFormats, StandardSchemaFormats
 from serialzy.registry import DefaultSerializerRegistry
-from tests.serializers.utils import serialize_and_deserialize
+from tests.rich_env.serializers.utils import serialize_and_deserialize
 
 
 class PrimitiveSerializationTests(TestCase):

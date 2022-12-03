@@ -10,7 +10,7 @@ from catboost import Pool, CatBoostRegressor, CatBoostRanker, CatBoostClassifier
 from serialzy.api import Schema
 from serialzy.registry import DefaultSerializerRegistry
 from serialzy.serializers.stable.catboost import CatboostPoolSerializer, CatboostModelSerializer
-from tests.serializers.utils import serialize_and_deserialize
+from tests.rich_env.serializers.utils import serialize_and_deserialize
 
 
 class CatboostPoolSerializationTests(TestCase):
