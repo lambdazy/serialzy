@@ -29,6 +29,10 @@ class CloudpickleSerializationTests(TestCase):
         self.assertEqual(b.x, deserialized.x)
         self.assertFalse(serializer.stable())
 
+        serializer = self.registry.find_serializer_by_type(type(B))
+        deserialized = serialize_and_deserialize(serializer, B)
+        self.assertEqual(B, deserialized)
+
     def test_schema(self):
         class B:
             def __init__(self, x: int):
@@ -108,3 +112,18 @@ class CloudpickleSerializationTests(TestCase):
             ).deserialize(file)
 
         self.assertEqual(msg.a, result.a)
+
+    def test_invalid_types(self):
+        class B:
+            def __init__(self, x: int):
+                self.x = x
+
+        serializer = self.registry.find_serializer_by_type(B)
+
+        with tempfile.TemporaryFile() as file:
+            serializer.serialize(B(1), file)
+            file.flush()
+            file.seek(0)
+
+            with self.assertRaisesRegex(ValueError, 'Cannot deserialize data with schema type*'):
+                serializer.deserialize(file, int)

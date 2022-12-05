@@ -1,6 +1,6 @@
 import json
 import logging
-from typing import Any, BinaryIO, Callable, Dict, Type, Union, cast
+from typing import Any, BinaryIO, Callable, Dict, Type, Union, cast, Optional
 
 from packaging import version  # type: ignore
 
@@ -9,7 +9,6 @@ from serialzy.api import (
     Serializer,
     StandardDataFormats,
     StandardSchemaFormats,
-    T,
 )
 from serialzy.utils import cached_installed_packages
 
@@ -23,10 +22,11 @@ class PrimitiveSerializer(Serializer):
         dumps = jsonpickle.dumps(obj).encode("utf-8")
         dest.write(dumps)
 
-    def _deserialize(self, source: BinaryIO, typ: Type[T]) -> T:
+    def _deserialize(self, source: BinaryIO, schema_type: Type, user_type: Optional[Type] = None) -> Any:
+        self._check_types_valid(schema_type, user_type)
         import jsonpickle  # type: ignore
         read = source.read().decode("utf-8")
-        return cast(T, jsonpickle.loads(read))
+        return jsonpickle.loads(read)
 
     def supported_types(self) -> Union[Type, Callable[[Type], bool]]:
         return lambda t: t in [int, float, str, bool, type(None)]

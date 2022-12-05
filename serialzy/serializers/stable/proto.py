@@ -1,6 +1,6 @@
 import logging
 import inspect
-from typing import Any, BinaryIO, Callable, Dict, Type, Union
+from typing import Any, BinaryIO, Callable, Dict, Type, Union, Optional
 
 from serialzy.api import StandardDataFormats, Schema
 from serialzy.base import DefaultSchemaSerializerByValue
@@ -15,11 +15,17 @@ class ProtoMessageSerializer(DefaultSchemaSerializerByValue):
     def _serialize(self, obj: Any, dest: BinaryIO) -> None:
         obj.dump(dest)
 
-    def _deserialize(self, source: BinaryIO, typ: Type) -> Any:
-        from pure_protobuf.dataclasses_ import load  # type: ignore
+    def _deserialize(self, source: BinaryIO, schema_type: Type, user_type: Optional[Type] = None) -> Any:
+        from pure_protobuf.dataclasses_ import load, Message  # type: ignore
+
+        if user_type is not None:
+            if not issubclass(user_type, Message):
+                raise ValueError(f'Cannot deserialize data with schema type {schema_type} into type {user_type}')
+            # noinspection PyTypeChecker
+            return load(user_type, source)
 
         # noinspection PyTypeChecker
-        return load(typ, source)
+        return load(schema_type, source)
 
     def available(self) -> bool:
         base_available = super().available()

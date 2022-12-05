@@ -5,7 +5,7 @@ from serialzy.serializers.union_base import UnionSerializerBase
 
 class UnionSerializerUnstable(UnionSerializerBase):
     def supported_types(self) -> Union[Type, Callable[[Type], bool]]:
-        return lambda t: get_origin(t) is not None and self.__check_args(get_args(t))
+        return lambda t: get_origin(t) == Union and self.__check_args(get_args(t))
 
     def stable(self) -> bool:
         return False

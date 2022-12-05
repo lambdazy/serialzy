@@ -26,7 +26,7 @@ def generate_serializer(
         def _serialize(self, obj: Any, dest: BinaryIO) -> None:
             pass
 
-        def _deserialize(self, source: BinaryIO, typ: Type) -> Any:
+        def _deserialize(self, source: BinaryIO, schema_type: Type) -> Any:
             pass
 
         def stable(self) -> bool:

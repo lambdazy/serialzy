@@ -1,13 +1,14 @@
 import dataclasses
 import json
 import logging
+import tempfile
 from abc import ABC
-from typing import Type, Dict, Union, BinaryIO, Any, cast, Optional
+from typing import Type, Dict, Union, BinaryIO, Any, cast, Optional, get_origin
 
 from packaging import version  # type: ignore
 from typing_extensions import get_args
 
-from serialzy.api import Serializer, Schema, T, SerializerRegistry
+from serialzy.api import Serializer, Schema, SerializerRegistry
 from serialzy.utils import cached_installed_packages
 from serialzy.version import __version__
 
@@ -32,21 +33,49 @@ class UnionSerializerBase(Serializer, ABC):
         Don't use this method for union serialization
         """
 
-    def deserialize(self, source: BinaryIO, typ: Optional[Type[T]] = None) -> T:
-        if typ is None:
-            typ = self._deserialize_type(source)
+    def _deserialize(self, source: BinaryIO, schema_type: Type, user_type: Optional[Type] = None) -> Any:
+        if user_type is None or get_origin(user_type) != Union:
+            serializer = cast(Serializer, self._registry.find_serializer_by_type(schema_type))
+            return serializer._deserialize(source, schema_type, user_type)
         else:
-            self._skip_header(source)
+            args = get_args(user_type)
+            # Optional case
+            if len(args) == 2 and args[1] == type(None):
+                if schema_type == type(None):
+                    return cast(Serializer, self._registry.find_serializer_by_type(schema_type))._deserialize(source,
+                                                                                                              schema_type)
+                else:
+                    try:
+                        return cast(Serializer, self._registry.find_serializer_by_type(args[0]))._deserialize(source,
+                                                                                                              schema_type,
+                                                                                                              args[0])
+                    except:
+                        raise ValueError(f'Cannot deserialize data into type {user_type}')
+            # General union case
+            else:
+                with tempfile.NamedTemporaryFile('wb+') as handle:
+                    # copy source
+                    while True:
+                        data = source.read(8096)
+                        if not data:
+                            break
+                        handle.write(data)
 
-        serializer = self._registry.find_serializer_by_type(typ)
-        if serializer is None:
-            raise ValueError(f'Cannot find serializer for type {typ}')
-        return serializer._deserialize(source, cast(Type[T], typ))
+                    handle.flush()
+                    handle.seek(0)
 
-    def _deserialize(self, source: BinaryIO, typ: Type[T]) -> T:
-        """
-        Don't use this method for union deserialization
-        """
+                    # try to deserialize in union arguments
+                    for arg in args:
+                        # noinspection PyBroadException
+                        try:
+                            serializer_by_type = cast(Serializer, self._registry.find_serializer_by_type(arg))
+                            obj = serializer_by_type._deserialize(cast(BinaryIO, handle), schema_type, arg)
+                            return obj
+                        except:
+                            handle.seek(0)
+                            continue
+
+                    raise ValueError(f'Cannot deserialize data into type {user_type}')
 
     def available(self) -> bool:
         return True

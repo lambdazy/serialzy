@@ -1,4 +1,5 @@
 import json
+import tempfile
 from json import JSONDecodeError
 from unittest import TestCase
 
@@ -30,6 +31,26 @@ class CatboostPoolSerializationTests(TestCase):
         self.assertEqual(pool.get_weight(), deserialized_pool.get_weight())
         self.assertTrue(serializer.stable())
         self.assertIn("catboost", serializer.meta())
+
+    def test_invalid_types(self):
+        serializer = self.registry.find_serializer_by_type(Pool)
+
+        with self.assertRaisesRegex(ValueError, 'Invalid object type*'):
+            with tempfile.TemporaryFile() as file:
+                serializer.serialize(1, file)
+
+        pool = Pool(
+            data=[[1, 4, 5, 6], [4, 5, 6, 7], [30, 40, 50, 60]],
+            label=[1, 1, -1],
+            weight=[0.1, 0.2, 0.3],
+        )
+        with tempfile.TemporaryFile() as file:
+            serializer.serialize(pool, file)
+            file.flush()
+            file.seek(0)
+
+            with self.assertRaisesRegex(ValueError, 'Cannot deserialize data with schema type*'):
+                serializer.deserialize(file, int)
 
     def test_schema(self):
         serializer = self.registry.find_serializer_by_data_format('catboost_quantized_pool')
@@ -135,3 +156,27 @@ class CatboostModelSerializationTests(TestCase):
                 "name": CatBoostClassifier.__name__
             }), {'catboost': '0.0.0'}))
         self.assertEqual(CatBoostClassifier, typ)
+
+    def test_invalid_types(self):
+        serializer = self.registry.find_serializer_by_type(CatBoostClassifier)
+
+        with self.assertRaisesRegex(ValueError, 'Invalid object type*'):
+            with tempfile.TemporaryFile() as file:
+                serializer.serialize(1, file)
+
+        # example from https://catboost.ai/en/docs/concepts/python-usages-examples
+        # noinspection DuplicatedCode
+        train_data = [[1, 4, 5, 6],
+                      [4, 5, 6, 7],
+                      [30, 40, 50, 60]]
+        train_labels = [10, 20, 30]
+        model = CatBoostRegressor(iterations=2, learning_rate=1, depth=2, silent=True)
+        model.fit(train_data, train_labels)
+
+        with tempfile.TemporaryFile() as file:
+            serializer.serialize(model, file)
+            file.flush()
+            file.seek(0)
+
+            with self.assertRaisesRegex(ValueError, 'Cannot deserialize data with schema type*'):
+                serializer.deserialize(file, int)

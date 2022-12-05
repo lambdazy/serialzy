@@ -2,15 +2,13 @@ import logging
 import os
 import tempfile
 from abc import ABC
-from typing import BinaryIO, Callable, Dict, Type, TypeVar, Union
+from typing import BinaryIO, Callable, Dict, Type, Union, Any, Optional
 
 from packaging import version  # type: ignore
 
 from serialzy.api import Schema
 from serialzy.base import DefaultSchemaSerializerByReference
 from serialzy.utils import cached_installed_packages
-
-T = TypeVar("T")  # pylint: disable=invalid-name
 
 _LOG = logging.getLogger(__name__)
 
@@ -46,7 +44,7 @@ class CatboostBaseSerializer(DefaultSchemaSerializerByReference, ABC):
 
 # noinspection PyPackageRequirements
 class CatboostPoolSerializer(CatboostBaseSerializer):
-    def _serialize(self, obj: T, dest: BinaryIO) -> None:
+    def _serialize(self, obj: Any, dest: BinaryIO) -> None:
         with tempfile.NamedTemporaryFile() as handle:
             if not obj.is_quantized():  # type: ignore
                 obj.quantize()  # type: ignore
@@ -57,7 +55,8 @@ class CatboostPoolSerializer(CatboostBaseSerializer):
                     break
                 dest.write(data)
 
-    def _deserialize(self, source: BinaryIO, typ: Type[T]) -> T:
+    def _deserialize(self, source: BinaryIO, schema_type: Type, user_type: Optional[Type] = None) -> Any:
+        self._check_types_valid(schema_type, user_type)
         with tempfile.NamedTemporaryFile() as handle:
             while True:
                 data = source.read(8096)
@@ -81,7 +80,7 @@ class CatboostPoolSerializer(CatboostBaseSerializer):
 
 # noinspection PyPackageRequirements
 class CatboostModelSerializer(CatboostBaseSerializer):
-    def _serialize(self, obj: T, dest: BinaryIO) -> None:
+    def _serialize(self, obj: Any, dest: BinaryIO) -> None:
         with tempfile.NamedTemporaryFile() as handle:
             obj.save_model(handle.name, format=self.data_format())  # type: ignore
             while True:
@@ -90,7 +89,8 @@ class CatboostModelSerializer(CatboostBaseSerializer):
                     break
                 dest.write(data)
 
-    def _deserialize(self, source: BinaryIO, typ: Type[T]) -> T:
+    def _deserialize(self, source: BinaryIO, schema_type: Type, user_type: Optional[Type] = None) -> Any:
+        self._check_types_valid(schema_type, user_type)
         with tempfile.NamedTemporaryFile() as handle:
             while True:
                 data = source.read(8096)
@@ -100,7 +100,7 @@ class CatboostModelSerializer(CatboostBaseSerializer):
             handle.flush()
             os.fsync(handle.fileno())
 
-            model = typ()
+            model = schema_type()
             model.load_model(handle.name, format=self.data_format())  # type: ignore
             return model
 

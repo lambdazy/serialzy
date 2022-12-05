@@ -107,6 +107,80 @@ class UnionSerializationTests(TestCase):
         serializer = self.registry.find_serializer_by_type(typ)
         self.assertIsNone(serializer)
 
+    def test_deserialize_in_union_with_type(self):
+        class B:
+            def __init__(self, x: int):
+                self.x = x
+
+        typ = Union[str, B]
+        obj = B(42)
+
+        serializer = self.registry.find_serializer_by_type(typ)
+        with tempfile.TemporaryFile() as file:
+            serializer.serialize(obj, file)
+            file.flush()
+            file.seek(0)
+            deserialized = serializer.deserialize(file, typ)
+
+        self.assertEqual(obj.x, deserialized.x)
+
+    def test_deserialize_in_union_with_type_unavailable(self):
+        class A:
+            def __init__(self, x: int):
+                self.x = x
+
+        class B:
+            def __init__(self, x: int):
+                self.x = x
+
+        typ = Union[str, B]
+        obj = B(42)
+
+        serializer = self.registry.find_serializer_by_type(typ)
+        with tempfile.TemporaryFile() as file:
+            serializer.serialize(obj, file)
+            file.flush()
+            file.seek(0)
+
+            with self.assertRaisesRegex(ValueError, "Cannot deserialize data into type*"):
+                serializer.deserialize(file, Union[int, A])
+
+        typ = Optional[B]
+        obj = B(42)
+
+        serializer = self.registry.find_serializer_by_type(typ)
+        with tempfile.TemporaryFile() as file:
+            serializer.serialize(obj, file)
+            file.flush()
+            file.seek(0)
+
+            with self.assertRaisesRegex(ValueError, "Cannot deserialize data into type*"):
+                serializer.deserialize(file, Optional[A])
+
+    def test_deserialize_in_optional_with_type(self):
+        class B:
+            def __init__(self, x: int):
+                self.x = x
+
+        typ = Optional[B]
+        obj = B(42)
+
+        serializer = self.registry.find_serializer_by_type(typ)
+        with tempfile.TemporaryFile() as file:
+            serializer.serialize(None, file)
+            file.flush()
+            file.seek(0)
+            deserialized_none = serializer.deserialize(file, typ)
+
+        with tempfile.TemporaryFile() as file:
+            serializer.serialize(obj, file)
+            file.flush()
+            file.seek(0)
+            deserialized_obj = serializer.deserialize(file, typ)
+
+        self.assertEqual(obj.x, deserialized_obj.x)
+        self.assertEqual(None, deserialized_none)
+
     def test_deserialize_with_type(self):
         @message
         @dataclass
@@ -136,11 +210,11 @@ class UnionSerializationTests(TestCase):
         self.assertEqual(1, deserialized.b)
 
         # removing proto serializer
-        to_remove = self.registry.find_serializer_by_type(TestMessage)
-        self.registry.unregister_serializer(to_remove)
+        to_remove_proto = self.registry.find_serializer_by_type(TestMessage)
+        self.registry.unregister_serializer(to_remove_proto)
         # removing cloudpickle serializer
-        to_remove = self.registry.find_serializer_by_type(TestMessage)
-        self.registry.unregister_serializer(to_remove)
+        to_remove_pickle = self.registry.find_serializer_by_type(TestMessage)
+        self.registry.unregister_serializer(to_remove_pickle)
 
         with tempfile.TemporaryFile() as file:
             obj = TestMessage(5)
@@ -150,5 +224,17 @@ class UnionSerializationTests(TestCase):
             file.flush()
             file.seek(0)
 
-            with self.assertRaisesRegex(ValueError, "Cannot find serializer for type*"):
+            with self.assertRaisesRegex(ValueError, "Invalid source format*"):
+                serializer.deserialize(file, TestMessage2)
+
+        self.registry.register_serializer(to_remove_proto)
+        with tempfile.TemporaryFile() as file:
+            obj = TestMessage(5)
+            serializer.serialize(obj, file)
+
+            file.flush()
+            file.seek(0)
+
+            self.registry.unregister_serializer(to_remove_proto)
+            with self.assertRaisesRegex(ValueError, "Cannot find serializer for data format*"):
                 serializer.deserialize(file, TestMessage2)

@@ -4,11 +4,9 @@ import json
 import logging
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, BinaryIO, Callable, Dict, Optional, Type, TypeVar, Union, cast
+from typing import Any, BinaryIO, Callable, Dict, Optional, Type, Union
 
 from packaging import version  # type: ignore
-
-T = TypeVar("T")
 
 _LOG = logging.getLogger(__name__)
 
@@ -35,6 +33,8 @@ class Schema:
 
 
 class Serializer(abc.ABC):
+    HEADER_STR = 'serialzy'
+
     def serialize(self, obj: Any, dest: BinaryIO) -> None:
         """
         :param obj: object to serialize into bytes
@@ -42,9 +42,11 @@ class Serializer(abc.ABC):
         :return: None
         """
 
+        typ = type(obj)
+        # check that obj type is valid
+        self._check_type(typ)
         # write schema header
-        self._write_schema(type(obj), dest)
-
+        self._write_schema(typ, dest)
         # write serialized data
         self._serialize(obj, dest)
 
@@ -56,7 +58,7 @@ class Serializer(abc.ABC):
         :return: None
         """
 
-    def deserialize(self, source: BinaryIO, typ: Optional[Type[T]] = None) -> T:
+    def deserialize(self, source: BinaryIO, typ: Optional[Type] = None) -> Any:
         """
         :param source: buffer of file with serialized data
         :param typ: type of the resulting object, fetched from the header if None
@@ -64,19 +66,17 @@ class Serializer(abc.ABC):
         """
 
         # read schema header
-        if typ is None:
-            typ = self._deserialize_type(source)
-        else:
-            self._skip_header(source)
+        schema_type = self._deserialize_type(source)
 
         # read serialized data
-        return self._deserialize(source, cast(Type[T], typ))
+        return self._deserialize(source, schema_type, typ)
 
     @abc.abstractmethod
-    def _deserialize(self, source: BinaryIO, typ: Type[T]) -> T:
+    def _deserialize(self, source: BinaryIO, schema_type: Type, user_type: Optional[Type] = None) -> Any:
         """
         :param source: buffer of file with serialized data
-        :param typ: type of the resulting object
+        :param schema_type: type of the resulting object retrieved from the schema header
+        :param user_type: type of the resulting object provided by a user
         :return: deserialized object
         """
 
@@ -131,24 +131,36 @@ class Serializer(abc.ABC):
             )
 
     def _deserialize_type(self, source: BinaryIO) -> Type:
+        first_str = source.read(len(self.HEADER_STR.encode('utf-8'))).decode('utf-8')
+        if first_str != self.HEADER_STR:
+            raise ValueError('Invalid source format')
+
         header_len = int.from_bytes(source.read(8), byteorder='big', signed=False)
         schema_json = source.read(header_len).decode('utf-8')
         schema = Schema(**json.loads(schema_json))
         typ = self.resolve(schema)
         return typ
 
-    @staticmethod
-    def _skip_header(source: BinaryIO) -> None:
-        header_len = int.from_bytes(source.read(8), byteorder='big', signed=False)
-        source.read(header_len)
-
     def _write_schema(self, typ: Type, dest: BinaryIO) -> None:
         schema = self.schema(typ)
         schema_json = json.dumps(dataclasses.asdict(schema))
         schema_bytes = schema_json.encode('utf-8')
         header_len = len(schema_bytes)
+        dest.write(self.HEADER_STR.encode('utf-8'))
         dest.write(header_len.to_bytes(length=8, byteorder='big', signed=False))
         dest.write(schema_bytes)
+
+    def _check_type(self, typ: Type) -> None:
+        supported = self.supported_types()
+        # mypy issue: https://github.com/python/mypy/issues/3060
+        if (isinstance(supported, Type) and typ != supported) or (  # type: ignore
+                not isinstance(supported, Type) and not supported(typ)):  # type: ignore
+            raise ValueError(f'Invalid object type {typ} for the serializer {type(self)}')
+
+    @staticmethod
+    def _check_types_valid(schema_type: Type, user_type: Optional[Type]) -> None:
+        if user_type is not None and user_type != schema_type:
+            raise ValueError(f'Cannot deserialize data with schema type {schema_type} into type {user_type}')
 
 
 class SerializerRegistry(abc.ABC):

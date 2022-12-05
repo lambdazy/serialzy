@@ -1,4 +1,6 @@
+import tempfile
 from json import JSONDecodeError
+from typing import List
 from unittest import TestCase
 
 from serialzy.api import Schema, StandardDataFormats, StandardSchemaFormats
@@ -94,7 +96,8 @@ class PrimitiveSerializationTests(TestCase):
                     {'jsonpickle': '10000.0.0'}
                 )
             )
-            self.assertRegex(cm.output[0], 'WARNING:serialzy.serializers.stable.primitive:Installed version of jsonpickle*')
+            self.assertRegex(cm.output[0],
+                             'WARNING:serialzy.serializers.stable.primitive:Installed version of jsonpickle*')
 
         with self.assertLogs() as cm:
             serializer.resolve(
@@ -105,4 +108,20 @@ class PrimitiveSerializationTests(TestCase):
                     {}
                 )
             )
-            self.assertRegex(cm.output[0], 'WARNING:serialzy.serializers.stable.primitive:No jsonpickle version in meta*')
+            self.assertRegex(cm.output[0],
+                             'WARNING:serialzy.serializers.stable.primitive:No jsonpickle version in meta*')
+
+    def test_invalid_types(self):
+        serializer = self.registry.find_serializer_by_type(int)
+
+        with self.assertRaisesRegex(ValueError, 'Invalid object type*'):
+            with tempfile.TemporaryFile() as file:
+                serializer.serialize([1, 1, 1], file)
+
+        with tempfile.TemporaryFile() as file:
+            serializer.serialize(1, file)
+            file.flush()
+            file.seek(0)
+
+            with self.assertRaisesRegex(ValueError, 'Cannot deserialize data with schema type*'):
+                serializer.deserialize(file, List[int])

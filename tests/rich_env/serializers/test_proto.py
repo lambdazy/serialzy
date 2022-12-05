@@ -134,3 +134,23 @@ class ProtoSerializationTests(TestCase):
                        {'cloudpickle': '0.0.0'}))
             self.assertRegex(cm.output[0],
                              'WARNING:serialzy.serializers.stable.proto:No pure-protobuf version in meta*')
+
+    def test_invalid_types(self):
+        @message
+        @dataclass
+        class TestMessage:
+            a: int32 = field(1, default=0)
+
+        serializer = self.registry.find_serializer_by_type(TestMessage)
+
+        with self.assertRaisesRegex(ValueError, 'Invalid object type*'):
+            with tempfile.TemporaryFile() as file:
+                serializer.serialize(1, file)
+
+        with tempfile.TemporaryFile() as file:
+            serializer.serialize(TestMessage(1), file)
+            file.flush()
+            file.seek(0)
+
+            with self.assertRaisesRegex(ValueError, 'Cannot deserialize data with schema type*'):
+                serializer.deserialize(file, int)
