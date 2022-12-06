@@ -10,7 +10,7 @@ from catboost import Pool, CatBoostRegressor, CatBoostRanker, CatBoostClassifier
 
 from serialzy.api import Schema
 from serialzy.registry import DefaultSerializerRegistry
-from serialzy.serializers.stable.catboost import CatboostPoolSerializer, CatboostModelSerializer
+from serialzy.serializers.catboost import CatboostPoolSerializer, CatboostModelSerializer
 from tests.rich_env.serializers.utils import serialize_and_deserialize
 
 
@@ -105,7 +105,7 @@ class CatboostPoolSerializationTests(TestCase):
                     "module": Pool.__module__,
                     "name": Pool.__name__
                 }), {}))
-            self.assertRegex(cm.output[0], 'WARNING:serialzy.serializers.stable.catboost:No catboost version in meta')
+            self.assertRegex(cm.output[0], 'WARNING:serialzy.serializers.catboost:No catboost version in meta')
 
         with self.assertLogs() as cm:
             serializer.resolve(
@@ -114,7 +114,7 @@ class CatboostPoolSerializationTests(TestCase):
                     "name": Pool.__name__
                 }), {'catboost': '1000.0.0'}))
             self.assertRegex(cm.output[0],
-                             'WARNING:serialzy.serializers.stable.catboost:Installed version of catboost*')
+                             'WARNING:serialzy.serializers.catboost:Installed version of catboost*')
 
 
 class CatboostModelSerializationTests(TestCase):
@@ -123,6 +123,7 @@ class CatboostModelSerializationTests(TestCase):
 
     def test_serialization(self):
         # example from https://catboost.ai/en/docs/concepts/python-usages-examples
+        # noinspection DuplicatedCode
         train_data = [[1, 4, 5, 6],
                       [4, 5, 6, 7],
                       [30, 40, 50, 60]]

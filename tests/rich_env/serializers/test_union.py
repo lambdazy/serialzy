@@ -77,11 +77,11 @@ class UnionSerializationTests(TestCase):
             serializer.resolve(
                 Schema('serialzy_union', 'serialzy_union_schema', schema.schema_content,
                        {'serialzy': '10000.0.0'}))
-            self.assertRegex(cm.output[0], 'WARNING:serialzy.serializers.union_base:Installed version of serialzy*')
+            self.assertRegex(cm.output[0], 'WARNING:serialzy.serializers.union:Installed version of serialzy*')
 
         with self.assertLogs() as cm:
             serializer.resolve(Schema('serialzy_union', 'serialzy_union_schema', schema.schema_content, {}))
-            self.assertRegex(cm.output[0], 'WARNING:serialzy.serializers.union_base:No serialzy version in meta*')
+            self.assertRegex(cm.output[0], 'WARNING:serialzy.serializers.union:No serialzy version in meta*')
 
     def test_stable_unstable_union(self):
         class B:

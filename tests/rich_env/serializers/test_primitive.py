@@ -97,7 +97,7 @@ class PrimitiveSerializationTests(TestCase):
                 )
             )
             self.assertRegex(cm.output[0],
-                             'WARNING:serialzy.serializers.stable.primitive:Installed version of jsonpickle*')
+                             'WARNING:serialzy.serializers.primitive:Installed version of jsonpickle*')
 
         with self.assertLogs() as cm:
             serializer.resolve(
@@ -109,7 +109,7 @@ class PrimitiveSerializationTests(TestCase):
                 )
             )
             self.assertRegex(cm.output[0],
-                             'WARNING:serialzy.serializers.stable.primitive:No jsonpickle version in meta*')
+                             'WARNING:serialzy.serializers.primitive:No jsonpickle version in meta*')
 
     def test_invalid_types(self):
         serializer = self.registry.find_serializer_by_type(int)

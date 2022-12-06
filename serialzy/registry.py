@@ -3,12 +3,11 @@ import logging
 import sys
 from collections import defaultdict
 from types import ModuleType
-from typing import Dict, List, Optional, Type, cast
+from typing import Dict, List, Optional, Type, cast, Iterable
 
-import serialzy.serializers.stable
-import serialzy.serializers.unstable
+import serialzy.serializers
 from serialzy.api import Serializer, SerializerRegistry
-from serialzy.serializers.cloudpickle import CloudpickleSerializer
+from serialzy.cloudpickle import CloudpickleSerializer
 from serialzy.utils import load_all_modules_from
 
 _LOG = logging.getLogger(__name__)
@@ -25,11 +24,12 @@ class DefaultSerializerRegistry(SerializerRegistry):
         self._serializer_priorities: Dict[Type[Serializer], int] = {}
         self._serializer_registry: Dict[Type[Serializer], Serializer] = {}
 
-        load_all_modules_from(serialzy.serializers.stable)
-        load_all_modules_from(serialzy.serializers.unstable)
-
-        self._register_serializers_from(serialzy.serializers.stable, self._default_priority_stable)
-        self._register_serializers_from(serialzy.serializers.unstable, self._default_priority_unstable)
+        load_all_modules_from(serialzy.serializers)
+        for serializer in self._fetch_serializers_from(serialzy.serializers):
+            if serializer.stable():
+                self.register_serializer(serializer, self._default_priority_stable)
+            else:
+                self.register_serializer(serializer, self._default_priority_unstable)
         # cloudpickle has the least priority
         self.register_serializer(CloudpickleSerializer(), sys.maxsize - 1)
 
@@ -113,7 +113,7 @@ class DefaultSerializerRegistry(SerializerRegistry):
                 serializer_priority = self._serializer_priorities[ser_type]
         return serializer
 
-    def _register_serializers_from(self, module: ModuleType, priority: int) -> None:
+    def _fetch_serializers_from(self, module: ModuleType) -> Iterable[Serializer]:
         stable_serializer_modules = dir(module)
         for module_attr in stable_serializer_modules:
             module_value = getattr(module, module_attr)
@@ -135,4 +135,4 @@ class DefaultSerializerRegistry(SerializerRegistry):
                                 f'Serializer {class_value.__name__} has unexpected arguments in __init__: '
                                 f'only empty arguments or SerializerRegistry are allowed')
 
-                        self.register_serializer(instance, priority)
+                        yield instance

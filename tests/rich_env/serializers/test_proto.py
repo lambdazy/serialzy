@@ -45,6 +45,7 @@ class ProtoSerializationTests(TestCase):
             b: int32 = field(2, default=1)
 
         serializer = self.registry.find_serializer_by_data_format(StandardDataFormats.proto.name)
+        # noinspection DuplicatedCode
         with tempfile.TemporaryFile() as file:
             obj = TestMessage(5)
             serializer.serialize(obj, file)
@@ -126,14 +127,14 @@ class ProtoSerializationTests(TestCase):
                 Schema(StandardDataFormats.proto.name, StandardSchemaFormats.pickled_type.name, schema.schema_content,
                        {'cloudpickle': '0.0.0', 'pure-protobuf': '10000.0.0'}))
             self.assertRegex(cm.output[0],
-                             'WARNING:serialzy.serializers.stable.proto:Installed version of pure-protobuf*')
+                             'WARNING:serialzy.serializers.proto:Installed version of pure-protobuf*')
 
         with self.assertLogs() as cm:
             serializer.resolve(
                 Schema(StandardDataFormats.proto.name, StandardSchemaFormats.pickled_type.name, schema.schema_content,
                        {'cloudpickle': '0.0.0'}))
             self.assertRegex(cm.output[0],
-                             'WARNING:serialzy.serializers.stable.proto:No pure-protobuf version in meta*')
+                             'WARNING:serialzy.serializers.proto:No pure-protobuf version in meta*')
 
     def test_invalid_types(self):
         @message
