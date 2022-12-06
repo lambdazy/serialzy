@@ -33,7 +33,8 @@ class Schema:
 
 
 class Serializer(abc.ABC):
-    HEADER_STR = 'serialzy'
+    HEADER_BYTES = 'serialzy'.encode('utf-8')
+    HEADER_BYTES_LEN = len(HEADER_BYTES)
 
     def serialize(self, obj: Any, dest: BinaryIO) -> None:
         """
@@ -131,8 +132,8 @@ class Serializer(abc.ABC):
             )
 
     def _deserialize_type(self, source: BinaryIO) -> Type:
-        first_str = source.read(len(self.HEADER_STR.encode('utf-8'))).decode('utf-8')
-        if first_str != self.HEADER_STR:
+        first_str = source.read(self.HEADER_BYTES_LEN)
+        if first_str != self.HEADER_BYTES:
             raise ValueError('Invalid source format')
 
         header_len = int.from_bytes(source.read(8), byteorder='big', signed=False)
@@ -146,7 +147,7 @@ class Serializer(abc.ABC):
         schema_json = json.dumps(dataclasses.asdict(schema))
         schema_bytes = schema_json.encode('utf-8')
         header_len = len(schema_bytes)
-        dest.write(self.HEADER_STR.encode('utf-8'))
+        dest.write(self.HEADER_BYTES)
         dest.write(header_len.to_bytes(length=8, byteorder='big', signed=False))
         dest.write(schema_bytes)
 
