@@ -1,5 +1,5 @@
 import logging
-from typing import Any, BinaryIO, Callable, Dict, Type, Union
+from typing import Any, BinaryIO, Callable, Dict, Type, Union, Optional
 
 from serialzy.api import StandardDataFormats, Schema
 from serialzy.base import DefaultSchemaSerializerByValue
@@ -12,11 +12,12 @@ _LOG = logging.getLogger(__name__)
 
 # noinspection PyMethodMayBeStatic, PyPackageRequirements
 class CloudpickleSerializer(DefaultSchemaSerializerByValue):
-    def serialize(self, obj: Any, dest: BinaryIO) -> None:
+    def _serialize(self, obj: Any, dest: BinaryIO) -> None:
         import cloudpickle  # type: ignore
         cloudpickle.dump(obj, dest)
 
-    def deserialize(self, source: BinaryIO, typ: Type) -> Any:
+    def _deserialize(self, source: BinaryIO, schema_type: Type, user_type: Optional[Type] = None) -> Any:
+        self._check_types_valid(schema_type, user_type)
         import cloudpickle  # type: ignore
         return cloudpickle.load(source)
 

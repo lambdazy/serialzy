@@ -4,13 +4,14 @@ from json import JSONDecodeError
 from unittest import TestCase
 
 # noinspection PyPackageRequirements
-from catboost import Pool, CatBoostRegressor, CatBoostRanker, CatBoostClassifier
-# noinspection PyPackageRequirements
 import numpy
+# noinspection PyPackageRequirements
+from catboost import Pool, CatBoostRegressor, CatBoostRanker, CatBoostClassifier
 
 from serialzy.api import Schema
-from serialzy.serializers.stable.catboost import CatboostPoolSerializer, CatboostModelSerializer
 from serialzy.registry import DefaultSerializerRegistry
+from serialzy.serializers.catboost import CatboostPoolSerializer, CatboostModelSerializer
+from tests.rich_env.serializers.utils import serialize_and_deserialize
 
 
 class CatboostPoolSerializationTests(TestCase):
@@ -24,16 +25,32 @@ class CatboostPoolSerializationTests(TestCase):
             weight=[0.1, 0.2, 0.3],
         )
         serializer = self.registry.find_serializer_by_type(type(pool))
-        with tempfile.TemporaryFile() as file:
-            serializer.serialize(pool, file)
-            file.flush()
-            file.seek(0)
-            deserialized_pool = serializer.deserialize(file, Pool)
+        deserialized_pool = serialize_and_deserialize(serializer, pool)
 
         self.assertTrue(isinstance(serializer, CatboostPoolSerializer))
         self.assertEqual(pool.get_weight(), deserialized_pool.get_weight())
         self.assertTrue(serializer.stable())
         self.assertIn("catboost", serializer.meta())
+
+    def test_invalid_types(self):
+        serializer = self.registry.find_serializer_by_type(Pool)
+
+        with self.assertRaisesRegex(ValueError, 'Invalid object type*'):
+            with tempfile.TemporaryFile() as file:
+                serializer.serialize(1, file)
+
+        pool = Pool(
+            data=[[1, 4, 5, 6], [4, 5, 6, 7], [30, 40, 50, 60]],
+            label=[1, 1, -1],
+            weight=[0.1, 0.2, 0.3],
+        )
+        with tempfile.TemporaryFile() as file:
+            serializer.serialize(pool, file)
+            file.flush()
+            file.seek(0)
+
+            with self.assertRaisesRegex(ValueError, 'Cannot deserialize data with schema type*'):
+                serializer.deserialize(file, int)
 
     def test_schema(self):
         serializer = self.registry.find_serializer_by_data_format('catboost_quantized_pool')
@@ -88,7 +105,7 @@ class CatboostPoolSerializationTests(TestCase):
                     "module": Pool.__module__,
                     "name": Pool.__name__
                 }), {}))
-            self.assertRegex(cm.output[0], 'WARNING:serialzy.serializers.stable.catboost:No catboost version in meta')
+            self.assertRegex(cm.output[0], 'WARNING:serialzy.serializers.catboost:No catboost version in meta')
 
         with self.assertLogs() as cm:
             serializer.resolve(
@@ -97,7 +114,7 @@ class CatboostPoolSerializationTests(TestCase):
                     "name": Pool.__name__
                 }), {'catboost': '1000.0.0'}))
             self.assertRegex(cm.output[0],
-                             'WARNING:serialzy.serializers.stable.catboost:Installed version of catboost*')
+                             'WARNING:serialzy.serializers.catboost:Installed version of catboost*')
 
 
 class CatboostModelSerializationTests(TestCase):
@@ -106,6 +123,7 @@ class CatboostModelSerializationTests(TestCase):
 
     def test_serialization(self):
         # example from https://catboost.ai/en/docs/concepts/python-usages-examples
+        # noinspection DuplicatedCode
         train_data = [[1, 4, 5, 6],
                       [4, 5, 6, 7],
                       [30, 40, 50, 60]]
@@ -114,11 +132,7 @@ class CatboostModelSerializationTests(TestCase):
         model.fit(train_data, train_labels)
 
         serializer = self.registry.find_serializer_by_type(type(model))
-        with tempfile.TemporaryFile() as file:
-            serializer.serialize(model, file)
-            file.flush()
-            file.seek(0)
-            deserialized_model = serializer.deserialize(file, type(model))
+        deserialized_model = serialize_and_deserialize(serializer, model)
 
         self.assertTrue(isinstance(serializer, CatboostModelSerializer))
         numpy.testing.assert_array_equal(model.get_leaf_weights(), deserialized_model.get_leaf_weights())
@@ -143,3 +157,27 @@ class CatboostModelSerializationTests(TestCase):
                 "name": CatBoostClassifier.__name__
             }), {'catboost': '0.0.0'}))
         self.assertEqual(CatBoostClassifier, typ)
+
+    def test_invalid_types(self):
+        serializer = self.registry.find_serializer_by_type(CatBoostClassifier)
+
+        with self.assertRaisesRegex(ValueError, 'Invalid object type*'):
+            with tempfile.TemporaryFile() as file:
+                serializer.serialize(1, file)
+
+        # example from https://catboost.ai/en/docs/concepts/python-usages-examples
+        # noinspection DuplicatedCode
+        train_data = [[1, 4, 5, 6],
+                      [4, 5, 6, 7],
+                      [30, 40, 50, 60]]
+        train_labels = [10, 20, 30]
+        model = CatBoostRegressor(iterations=2, learning_rate=1, depth=2, silent=True)
+        model.fit(train_data, train_labels)
+
+        with tempfile.TemporaryFile() as file:
+            serializer.serialize(model, file)
+            file.flush()
+            file.seek(0)
+
+            with self.assertRaisesRegex(ValueError, 'Cannot deserialize data with schema type*'):
+                serializer.deserialize(file, int)

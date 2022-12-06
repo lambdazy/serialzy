@@ -10,6 +10,7 @@ from pure_protobuf.types import int32
 
 from serialzy.api import Schema, StandardDataFormats, StandardSchemaFormats
 from serialzy.registry import DefaultSerializerRegistry
+from tests.rich_env.serializers.utils import serialize_and_deserialize
 
 
 class CloudpickleSerializationTests(TestCase):
@@ -23,15 +24,14 @@ class CloudpickleSerializationTests(TestCase):
 
         serializer = self.registry.find_serializer_by_type(B)
         b = B(42)
-
-        with tempfile.TemporaryFile() as file:
-            serializer.serialize(b, file)
-            file.flush()
-            file.seek(0)
-            deserialized = serializer.deserialize(file, B)
+        deserialized = serialize_and_deserialize(serializer, b)
 
         self.assertEqual(b.x, deserialized.x)
         self.assertFalse(serializer.stable())
+
+        serializer = self.registry.find_serializer_by_type(type(B))
+        deserialized = serialize_and_deserialize(serializer, B)
+        self.assertEqual(B, deserialized)
 
     def test_schema(self):
         class B:
@@ -109,6 +109,21 @@ class CloudpickleSerializationTests(TestCase):
             file.seek(0)
             result = self.registry.find_serializer_by_type(
                 unpickled_msg_type
-            ).deserialize(file, unpickled_msg_type)
+            ).deserialize(file)
 
         self.assertEqual(msg.a, result.a)
+
+    def test_invalid_types(self):
+        class B:
+            def __init__(self, x: int):
+                self.x = x
+
+        serializer = self.registry.find_serializer_by_type(B)
+
+        with tempfile.TemporaryFile() as file:
+            serializer.serialize(B(1), file)
+            file.flush()
+            file.seek(0)
+
+            with self.assertRaisesRegex(ValueError, 'Cannot deserialize data with schema type*'):
+                serializer.deserialize(file, int)

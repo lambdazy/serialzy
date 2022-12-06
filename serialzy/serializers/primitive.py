@@ -1,5 +1,7 @@
+import json
 import logging
-from typing import Any, BinaryIO, Callable, Dict, Type, Union, cast
+from typing import Any, BinaryIO, Callable, Dict, Type, Union, cast, Optional
+
 from packaging import version  # type: ignore
 
 from serialzy.api import (
@@ -7,7 +9,6 @@ from serialzy.api import (
     Serializer,
     StandardDataFormats,
     StandardSchemaFormats,
-    T,
 )
 from serialzy.utils import cached_installed_packages
 
@@ -16,15 +17,16 @@ _LOG = logging.getLogger(__name__)
 
 # noinspection PyPackageRequirements
 class PrimitiveSerializer(Serializer):
-    def serialize(self, obj: Any, dest: BinaryIO) -> None:
+    def _serialize(self, obj: Any, dest: BinaryIO) -> None:
         import jsonpickle  # type: ignore
         dumps = jsonpickle.dumps(obj).encode("utf-8")
         dest.write(dumps)
 
-    def deserialize(self, source: BinaryIO, typ: Type[T]) -> T:
+    def _deserialize(self, source: BinaryIO, schema_type: Type, user_type: Optional[Type] = None) -> Any:
+        self._check_types_valid(schema_type, user_type)
         import jsonpickle  # type: ignore
         read = source.read().decode("utf-8")
-        return cast(T, jsonpickle.loads(read))
+        return jsonpickle.loads(read)
 
     def supported_types(self) -> Union[Type, Callable[[Type], bool]]:
         return lambda t: t in [int, float, str, bool, type(None)]
@@ -66,4 +68,10 @@ class PrimitiveSerializer(Serializer):
         elif version.parse(schema.meta['jsonpickle']) > version.parse(cached_installed_packages["jsonpickle"]):
             _LOG.warning(f'Installed version of jsonpickle {cached_installed_packages["jsonpickle"]} '
                          f'is older than used for serialization {schema.meta["jsonpickle"]}')
+
+        from jsonpickle import tags
+        json_loaded = json.loads(schema.schema_content)
+        if json_loaded[tags.TYPE] == 'builtins.NoneType':  # jsonpickle cannot resolve NoneType
+            return type(None)
+
         return cast(Type, jsonpickle.loads(schema.schema_content))

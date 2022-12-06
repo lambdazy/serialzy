@@ -1,13 +1,13 @@
 import inspect
 import logging
 import sys
-from collections import OrderedDict, defaultdict
+from collections import defaultdict
 from types import ModuleType
-from typing import Dict, List, Optional, Type, cast
+from typing import Dict, List, Optional, Type, cast, Iterable
 
-import serialzy.serializers.stable
-import serialzy.serializers.unstable
+import serialzy.serializers
 from serialzy.api import Serializer, SerializerRegistry
+from serialzy.cloudpickle import CloudpickleSerializer
 from serialzy.utils import load_all_modules_from
 
 _LOG = logging.getLogger(__name__)
@@ -15,29 +15,32 @@ _LOG = logging.getLogger(__name__)
 
 class DefaultSerializerRegistry(SerializerRegistry):
     def __init__(self):
-        self._default_priority = sys.maxsize - 10
-        self._default_priority_unstable = sys.maxsize - 1
+        self._default_priority_stable = sys.maxsize - 10
+        self._default_priority_unstable = sys.maxsize - 5
+
         self._type_registry: Dict[Type, Serializer] = {}
-        self._type_name_registry: Dict[Type, str] = {}
-        self._name_registry: Dict[str, Serializer] = OrderedDict()
-        self._data_formats_name_registry: Dict[str, List[str]] = defaultdict(list)
-        self._serializer_priorities: Dict[str, int] = {}
+        self._data_formats_serializer_registry: Dict[str, List[Serializer]] = defaultdict(list)
 
-        load_all_modules_from(serialzy.serializers.stable)
-        load_all_modules_from(serialzy.serializers.unstable)
+        self._serializer_priorities: Dict[Type[Serializer], int] = {}
+        self._serializer_registry: Dict[Type[Serializer], Serializer] = {}
 
-        self._register_serializers_from(serialzy.serializers.stable, self._default_priority)
-        self._register_serializers_from(serialzy.serializers.unstable, self._default_priority_unstable)
+        load_all_modules_from(serialzy.serializers)
+        for serializer in self._fetch_serializers_from(serialzy.serializers):
+            if serializer.stable():
+                self.register_serializer(serializer, self._default_priority_stable)
+            else:
+                self.register_serializer(serializer, self._default_priority_unstable)
+        # cloudpickle has the least priority
+        self.register_serializer(CloudpickleSerializer(), sys.maxsize - 1)
 
-    def register_serializer(
-            self, name: str, serializer: Serializer, priority: Optional[int] = None
-    ) -> None:
+    def register_serializer(self, serializer: Serializer, priority: Optional[int] = None) -> None:
+        serializer_type = type(serializer)
         if not serializer.available():
-            _LOG.debug(f"Serializer {name} cannot be registered")
+            _LOG.debug(f"Serializer {serializer_type} cannot be registered")
             return
 
-        if name in self._serializer_priorities:
-            raise ValueError(f"Serializer {name} has been already registered")
+        if serializer_type in self._serializer_registry:
+            raise ValueError(f"Serializer {serializer_type} has been already registered")
 
         if isinstance(serializer.supported_types(),
                       Type) and serializer.supported_types() in self._type_registry:  # type: ignore
@@ -45,37 +48,42 @@ class DefaultSerializerRegistry(SerializerRegistry):
                 f"Serializer for type {serializer.supported_types()} has been already registered"
             )
 
-        priority = self._default_priority if priority is None else priority
-        self._serializer_priorities[name] = priority
-        self._name_registry[name] = serializer
-        self._data_formats_name_registry[serializer.data_format()].append(name)
+        if priority is None:
+            if serializer.stable():
+                priority = self._default_priority_stable
+            else:
+                priority = self._default_priority_unstable
+
+        self._serializer_priorities[serializer_type] = priority
+        self._serializer_registry[serializer_type] = serializer
+
+        self._data_formats_serializer_registry[serializer.data_format()].append(serializer)
         # mypy issue: https://github.com/python/mypy/issues/3060
         if isinstance(serializer.supported_types(), Type):  # type: ignore
             self._type_registry[cast(Type, serializer.supported_types())] = serializer
-            self._type_name_registry[cast(Type, serializer.supported_types())] = name
 
-    def unregister_serializer(self, name: str):
-        if name in self._serializer_priorities:
-            serializer = self._name_registry[name]
+    def unregister_serializer(self, serializer: Serializer):
+        serializer_type = type(serializer)
+        if serializer_type in self._serializer_registry:
             # mypy issue: https://github.com/python/mypy/issues/3060
             if isinstance(serializer.supported_types(), Type):  # type: ignore
                 del self._type_registry[cast(Type, serializer.supported_types())]
-                del self._type_name_registry[cast(Type, serializer.supported_types())]
-                self._data_formats_name_registry[serializer.data_format()].remove(name)
-            del self._serializer_priorities[name]
-            del self._name_registry[name]
+            self._data_formats_serializer_registry[serializer.data_format()].remove(serializer)
+
+            del self._serializer_priorities[serializer_type]
+            del self._serializer_registry[serializer_type]
 
     def find_serializer_by_type(self, typ: Type) -> Serializer:
         filter_ser: Optional[Serializer] = None
         filter_ser_priority = sys.maxsize
-        for name, serializer in self._name_registry.items():
+        for serializer_type, serializer in self._serializer_registry.items():
             if (
                     # mypy issue: https://github.com/python/mypy/issues/3060
                     not isinstance(serializer.supported_types(), Type)  # type: ignore
                     and serializer.supported_types()(typ)
-                    and self._serializer_priorities[name] < filter_ser_priority
+                    and self._serializer_priorities[serializer_type] < filter_ser_priority
             ):
-                filter_ser_priority = self._serializer_priorities[name]
+                filter_ser_priority = self._serializer_priorities[serializer_type]
                 filter_ser = serializer
 
         obj_type_ser: Optional[Serializer] = (
@@ -84,7 +92,7 @@ class DefaultSerializerRegistry(SerializerRegistry):
         obj_type_ser_priority = (
             sys.maxsize
             if obj_type_ser is None
-            else self._serializer_priorities[self._type_name_registry[typ]]
+            else self._serializer_priorities[type(obj_type_ser)]
         )
 
         if obj_type_ser is not None:
@@ -95,27 +103,17 @@ class DefaultSerializerRegistry(SerializerRegistry):
             )
         return cast(Serializer, filter_ser)
 
-    def find_serializer_by_name(self, serializer_name: str) -> Optional[Serializer]:
-        if serializer_name in self._name_registry:
-            return self._name_registry[serializer_name]
-        return None
-
-    def resolve_name(self, serializer: Serializer) -> Optional[str]:
-        for name, s in self._name_registry.items():
-            if serializer == s:
-                return name
-        return None
-
     def find_serializer_by_data_format(self, data_format: str) -> Optional[Serializer]:
         serializer: Optional[Serializer] = None
         serializer_priority = sys.maxsize
-        for name in self._data_formats_name_registry[data_format]:
-            if self._serializer_priorities[name] < serializer_priority:
-                serializer = self._name_registry[name]
-                serializer_priority = self._serializer_priorities[name]
+        for ser in self._data_formats_serializer_registry[data_format]:
+            ser_type = type(ser)
+            if self._serializer_priorities[ser_type] < serializer_priority:
+                serializer = ser
+                serializer_priority = self._serializer_priorities[ser_type]
         return serializer
 
-    def _register_serializers_from(self, module: ModuleType, priority: int) -> None:
+    def _fetch_serializers_from(self, module: ModuleType) -> Iterable[Serializer]:
         stable_serializer_modules = dir(module)
         for module_attr in stable_serializer_modules:
             module_value = getattr(module, module_attr)
@@ -125,4 +123,16 @@ class DefaultSerializerRegistry(SerializerRegistry):
                     class_value = getattr(module_value, class_attr)
                     if inspect.isclass(class_value) and not inspect.isabstract(class_value) and issubclass(class_value,
                                                                                                            Serializer):
-                        self.register_serializer("Serialzy" + class_value.__name__, class_value(), priority)
+                        sig = inspect.signature(class_value)
+                        if len(sig.parameters) == 0:
+                            instance = class_value()
+                        elif len(sig.parameters) == 1 and issubclass(list(sig.parameters.values())[0].annotation,
+                                                                     SerializerRegistry):
+                            # noinspection PyArgumentList
+                            instance = class_value(self)  # type: ignore
+                        else:
+                            raise ValueError(
+                                f'Serializer {class_value.__name__} has unexpected arguments in __init__: '
+                                f'only empty arguments or SerializerRegistry are allowed')
+
+                        yield instance

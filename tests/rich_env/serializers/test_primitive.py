@@ -1,9 +1,11 @@
+import tempfile
 from json import JSONDecodeError
+from typing import List
 from unittest import TestCase
 
 from serialzy.api import Schema, StandardDataFormats, StandardSchemaFormats
 from serialzy.registry import DefaultSerializerRegistry
-from tests.serializers.utils import serialized_and_deserialized
+from tests.rich_env.serializers.utils import serialize_and_deserialize
 
 
 class PrimitiveSerializationTests(TestCase):
@@ -11,25 +13,22 @@ class PrimitiveSerializationTests(TestCase):
         self.registry = DefaultSerializerRegistry()
 
     def test_serialization(self):
+        serializer = self.registry.find_serializer_by_data_format(StandardDataFormats.primitive_type.name)
+
         var = 10
-        serializer = self.registry.find_serializer_by_type(type(var))
-        self.assertEqual(var, serialized_and_deserialized(serializer, var))
+        self.assertEqual(var, serialize_and_deserialize(serializer, var))
 
         var = 0.0001
-        serializer = self.registry.find_serializer_by_type(type(var))
-        self.assertEqual(var, serialized_and_deserialized(serializer, var))
+        self.assertEqual(var, serialize_and_deserialize(serializer, var))
 
         var = "str"
-        serializer = self.registry.find_serializer_by_type(type(var))
-        self.assertEqual(var, serialized_and_deserialized(serializer, var))
+        self.assertEqual(var, serialize_and_deserialize(serializer, var))
 
         var = True
-        serializer = self.registry.find_serializer_by_type(type(var))
-        self.assertEqual(var, serialized_and_deserialized(serializer, var))
+        self.assertEqual(var, serialize_and_deserialize(serializer, var))
 
         var = None
-        serializer = self.registry.find_serializer_by_type(type(var))
-        self.assertEqual(var, serialized_and_deserialized(serializer, var))
+        self.assertEqual(var, serialize_and_deserialize(serializer, var))
 
     def test_schema(self):
         serializer = self.registry.find_serializer_by_data_format(StandardDataFormats.primitive_type.name)
@@ -52,6 +51,12 @@ class PrimitiveSerializationTests(TestCase):
             '{"py/type": "builtins.str"}', {'jsonpickle': '0.0.0'}
         ))
         self.assertEqual(str, typ)
+
+        typ = serializer.resolve(Schema(
+            StandardDataFormats.primitive_type.name, StandardSchemaFormats.json_pickled_type.name,
+            '{"py/type": "builtins.NoneType"}', {'jsonpickle': '0.0.0'}
+        ))
+        self.assertEqual(type(None), typ)
 
         with self.assertRaisesRegex(ValueError, "Invalid data format*"):
             serializer.resolve(
@@ -91,7 +96,8 @@ class PrimitiveSerializationTests(TestCase):
                     {'jsonpickle': '10000.0.0'}
                 )
             )
-            self.assertRegex(cm.output[0], 'WARNING:serialzy.serializers.stable.primitive:Installed version of jsonpickle*')
+            self.assertRegex(cm.output[0],
+                             'WARNING:serialzy.serializers.primitive:Installed version of jsonpickle*')
 
         with self.assertLogs() as cm:
             serializer.resolve(
@@ -102,4 +108,20 @@ class PrimitiveSerializationTests(TestCase):
                     {}
                 )
             )
-            self.assertRegex(cm.output[0], 'WARNING:serialzy.serializers.stable.primitive:No jsonpickle version in meta*')
+            self.assertRegex(cm.output[0],
+                             'WARNING:serialzy.serializers.primitive:No jsonpickle version in meta*')
+
+    def test_invalid_types(self):
+        serializer = self.registry.find_serializer_by_type(int)
+
+        with self.assertRaisesRegex(ValueError, 'Invalid object type*'):
+            with tempfile.TemporaryFile() as file:
+                serializer.serialize([1, 1, 1], file)
+
+        with tempfile.TemporaryFile() as file:
+            serializer.serialize(1, file)
+            file.flush()
+            file.seek(0)
+
+            with self.assertRaisesRegex(ValueError, 'Cannot deserialize data with schema type*'):
+                serializer.deserialize(file, List[int])
