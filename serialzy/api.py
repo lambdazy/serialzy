@@ -136,7 +136,7 @@ class Serializer(abc.ABC):
         if first_str != self.HEADER_BYTES:
             raise ValueError('Invalid source format')
 
-        header_len = int.from_bytes(source.read(8), byteorder='big', signed=False)
+        header_len = int.from_bytes(source.read(8), byteorder='little', signed=False)
         schema_json = source.read(header_len).decode('utf-8')
         schema = Schema(**json.loads(schema_json))
         typ = self.resolve(schema)
@@ -148,7 +148,7 @@ class Serializer(abc.ABC):
         schema_bytes = schema_json.encode('utf-8')
         header_len = len(schema_bytes)
         dest.write(self.HEADER_BYTES)
-        dest.write(header_len.to_bytes(length=8, byteorder='big', signed=False))
+        dest.write(header_len.to_bytes(length=8, byteorder='little', signed=False))
         dest.write(schema_bytes)
 
     def _check_type(self, typ: Type) -> None:
