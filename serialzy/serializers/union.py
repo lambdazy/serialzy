@@ -3,10 +3,10 @@ import json
 import logging
 import tempfile
 from abc import ABC
-from typing import Type, Dict, Union, BinaryIO, Any, cast, Optional, get_origin, Callable, Tuple
+from typing import Type, Dict, Union, BinaryIO, Any, cast, Optional, Callable, Tuple
 
 from packaging import version  # type: ignore
-from typing_extensions import get_args
+from typing_extensions import get_args, get_origin
 
 from serialzy.api import Serializer, Schema, SerializerRegistry
 from serialzy.utils import cached_installed_packages
