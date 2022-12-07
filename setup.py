@@ -19,6 +19,12 @@ def read_requirements() -> List[str]:
 setuptools.setup(
     name="serialzy",
     version=read_version(),
+    license="LICENSE",
+    classifiers=[
+        "Programming Language :: Python :: 3.7",
+        "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9"
+    ],
     author="ʎzy developers",
     install_requires=read_requirements(),
     package_data={
