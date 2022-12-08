@@ -1,4 +1,4 @@
 #!/bin/bash
 
-pip install tox
+pip install tox -U
 tox

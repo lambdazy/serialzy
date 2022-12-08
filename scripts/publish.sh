@@ -8,4 +8,5 @@ export TWINE_USERNAME="__token__"
 #
 # export TWINE_PASSWORD="<provide token here>"
 
+pip install twine -U
 python -m twine upload dist/* --verbose
