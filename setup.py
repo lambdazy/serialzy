@@ -16,6 +16,11 @@ def read_requirements() -> List[str]:
     return requirements
 
 
+def read_readme() -> str:
+    with open("README.md", "r") as file:
+        return file.read()
+
+
 setuptools.setup(
     name="serialzy",
     version=read_version(),
@@ -36,4 +41,6 @@ setuptools.setup(
         "serialzy/serializers"
     ],
     python_requires=">=3.7",
+    long_description=read_readme(),
+    long_description_content_type='text/markdown'
 )
