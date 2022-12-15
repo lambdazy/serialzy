@@ -206,6 +206,17 @@ class UnionSerializationTests(TestCase):
         self.assertTrue(isinstance(obj, TestMessage))
         self.assertTrue(isinstance(deserialized, TestMessage2))
 
+        # noinspection DuplicatedCode
+        with tempfile.TemporaryFile() as file:
+            obj = TestMessage(5)
+            serializer.serialize(obj, file)
+            file.flush()
+            file.seek(0)
+            deserialized = serializer.deserialize(file, Optional[TestMessage2])
+
+        self.assertTrue(isinstance(obj, TestMessage))
+        self.assertTrue(isinstance(deserialized, TestMessage2))
+
         self.assertEqual(obj.a, deserialized.a)
         self.assertEqual(1, deserialized.b)
 
