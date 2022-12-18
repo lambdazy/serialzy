@@ -71,7 +71,7 @@ class CloudpickleSerializationTests(TestCase):
             serializer.resolve(
                 Schema(
                     StandardDataFormats.pickle.name,
-                    StandardSchemaFormats.json_pickled_type.name,
+                    StandardSchemaFormats.no_schema.name,
                     schema.schema_content,
                     {'cloudpickle': '0.0.0'}
                 )

@@ -37,24 +37,24 @@ class PrimitiveSerializationTests(TestCase):
 
         schema = serializer.schema(int)
         self.assertEqual(StandardDataFormats.primitive_type.name, schema.data_format)
-        self.assertEqual(StandardSchemaFormats.json_pickled_type.name, schema.schema_format)
-        self.assertEqual('{"py/type": "builtins.int"}', schema.schema_content)
-        self.assertTrue('jsonpickle' in schema.meta)
+        self.assertEqual('serialzy_python_type_reference', schema.schema_format)
+        self.assertEqual('{"module": "builtins", "name": "int"}', schema.schema_content)
+        self.assertTrue('serialzy' in schema.meta)
 
         schema = serializer.schema(type(None))
-        self.assertEqual('{"py/type": "builtins.NoneType"}', schema.schema_content)
+        self.assertEqual('{"module": "builtins", "name": "NoneType"}', schema.schema_content)
 
     def test_resolve(self):
         serializer = self.registry.find_serializer_by_data_format(StandardDataFormats.primitive_type.name)
         typ = serializer.resolve(Schema(
-            StandardDataFormats.primitive_type.name, StandardSchemaFormats.json_pickled_type.name,
-            '{"py/type": "builtins.str"}', {'jsonpickle': '0.0.0'}
+            StandardDataFormats.primitive_type.name, 'serialzy_python_type_reference',
+            '{"module": "builtins", "name": "str"}'
         ))
         self.assertEqual(str, typ)
 
         typ = serializer.resolve(Schema(
-            StandardDataFormats.primitive_type.name, StandardSchemaFormats.json_pickled_type.name,
-            '{"py/type": "builtins.NoneType"}', {'jsonpickle': '0.0.0'}
+            StandardDataFormats.primitive_type.name, 'serialzy_python_type_reference',
+            '{"module": "builtins", "name": "NoneType"}'
         ))
         self.assertEqual(type(None), typ)
 
@@ -62,9 +62,8 @@ class PrimitiveSerializationTests(TestCase):
             serializer.resolve(
                 Schema(
                     StandardDataFormats.proto.name,
-                    StandardSchemaFormats.json_pickled_type.name,
-                    "content",
-                    {'jsonpickle': '0.0.0'}
+                    'serialzy_python_type_reference',
+                    "content"
                 )
             )
         with self.assertRaisesRegex(ValueError, "Invalid schema format*"):
@@ -72,8 +71,7 @@ class PrimitiveSerializationTests(TestCase):
                 Schema(
                     StandardDataFormats.primitive_type.name,
                     StandardSchemaFormats.pickled_type.name,
-                    "content",
-                    {'jsonpickle': '0.0.0'}
+                    "content"
                 )
             )
 
@@ -81,35 +79,10 @@ class PrimitiveSerializationTests(TestCase):
             serializer.resolve(
                 Schema(
                     StandardDataFormats.primitive_type.name,
-                    StandardSchemaFormats.json_pickled_type.name,
-                    "invalid content",
-                    {'jsonpickle': '0.0.0'}
+                    'serialzy_python_type_reference',
+                    "invalid content"
                 )
             )
-
-        with self.assertLogs() as cm:
-            serializer.resolve(
-                Schema(
-                    StandardDataFormats.primitive_type.name,
-                    StandardSchemaFormats.json_pickled_type.name,
-                    '{"py/type": "builtins.str"}',
-                    {'jsonpickle': '10000.0.0'}
-                )
-            )
-            self.assertRegex(cm.output[0],
-                             'WARNING:serialzy.serializers.primitive:Installed version of jsonpickle*')
-
-        with self.assertLogs() as cm:
-            serializer.resolve(
-                Schema(
-                    StandardDataFormats.primitive_type.name,
-                    StandardSchemaFormats.json_pickled_type.name,
-                    '{"py/type": "builtins.str"}',
-                    {}
-                )
-            )
-            self.assertRegex(cm.output[0],
-                             'WARNING:serialzy.serializers.primitive:No jsonpickle version in meta*')
 
     def test_invalid_types(self):
         serializer = self.registry.find_serializer_by_type(int)

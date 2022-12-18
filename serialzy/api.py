@@ -14,13 +14,11 @@ _LOG = logging.getLogger(__name__)
 class StandardDataFormats(Enum):
     pickle = "pickle"
     proto = "proto"
-    raw_file = "raw_file"
     primitive_type = "primitive_type"
 
 
 class StandardSchemaFormats(Enum):
     pickled_type = "pickled_type"
-    json_pickled_type = "json_pickled_type"
     no_schema = "no_schema"
 
 
