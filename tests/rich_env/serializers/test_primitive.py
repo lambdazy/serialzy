@@ -34,6 +34,8 @@ class PrimitiveSerializationTests(TestCase):
         serializer = self.registry.find_serializer_by_data_format(StandardDataFormats.primitive_type.name)
         self.assertTrue(serializer.stable())
         self.assertTrue(serializer.available())
+        self.assertTrue('serialzy' in serializer.meta())
+        self.assertTrue(len(serializer.requirements()) == 0)
 
         schema = serializer.schema(int)
         self.assertEqual(StandardDataFormats.primitive_type.name, schema.data_format)

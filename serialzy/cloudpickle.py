@@ -1,7 +1,7 @@
 import logging
 from typing import Any, BinaryIO, Callable, Dict, Type, Union, Optional
 
-from serialzy.api import StandardDataFormats, Schema
+from serialzy.api import StandardDataFormats, Schema, VersionBoundary
 from serialzy.base import DefaultSchemaSerializerByValue
 from packaging import version  # type: ignore
 
@@ -53,3 +53,6 @@ class CloudpickleSerializer(DefaultSchemaSerializerByValue):
             _LOG.warning(f'Installed version of cloudpickle {cached_installed_packages["cloudpickle"]} '
                          f'is older than used for serialization {schema.meta["cloudpickle"]}')
         return typ
+
+    def requirements(self) -> Dict[str, VersionBoundary]:
+        return {"cloudpickle": VersionBoundary()}

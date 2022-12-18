@@ -9,6 +9,7 @@ import numpy
 from catboost import Pool, CatBoostRegressor, CatBoostRanker, CatBoostClassifier
 
 from serialzy.api import Schema
+from serialzy.errors import SerialzyError
 from serialzy.registry import DefaultSerializerRegistry
 from serialzy.serializers.catboost import CatboostPoolSerializer, CatboostModelSerializer
 from tests.rich_env.serializers.utils import serialize_and_deserialize
@@ -24,6 +25,7 @@ class CatboostPoolSerializationTests(TestCase):
             label=[1, 1, -1],
             weight=[0.1, 0.2, 0.3],
         )
+        pool.quantize()
         serializer = self.registry.find_serializer_by_type(type(pool))
         deserialized_pool = serialize_and_deserialize(serializer, pool)
 
@@ -31,6 +33,17 @@ class CatboostPoolSerializationTests(TestCase):
         self.assertEqual(pool.get_weight(), deserialized_pool.get_weight())
         self.assertTrue(serializer.stable())
         self.assertIn("catboost", serializer.meta())
+        self.assertIn("catboost", serializer.requirements())
+
+    def test_serialization_not_quantized(self):
+        pool = Pool(
+            data=[[1, 4, 5, 6], [4, 5, 6, 7], [30, 40, 50, 60]],
+            label=[1, 1, -1],
+            weight=[0.1, 0.2, 0.3],
+        )
+        serializer = self.registry.find_serializer_by_type(type(pool))
+        with self.assertRaisesRegex(SerialzyError, 'nly quantized pools can be serialized*'):
+            serialize_and_deserialize(serializer, pool)
 
     def test_invalid_types(self):
         serializer = self.registry.find_serializer_by_type(Pool)
@@ -44,6 +57,7 @@ class CatboostPoolSerializationTests(TestCase):
             label=[1, 1, -1],
             weight=[0.1, 0.2, 0.3],
         )
+        pool.quantize()
         with tempfile.TemporaryFile() as file:
             serializer.serialize(pool, file)
             file.flush()

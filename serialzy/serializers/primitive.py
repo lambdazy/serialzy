@@ -3,7 +3,7 @@ from typing import Any, BinaryIO, Callable, Dict, Type, Union, Optional
 
 from packaging import version  # type: ignore
 
-from serialzy.api import StandardDataFormats
+from serialzy.api import StandardDataFormats, VersionBoundary
 from serialzy.base import DefaultSchemaSerializerByReference
 from serialzy.version import __version__
 
@@ -37,3 +37,6 @@ class PrimitiveSerializer(DefaultSchemaSerializerByReference):
 
     def meta(self) -> Dict[str, str]:
         return {'serialzy': __version__}
+
+    def requirements(self) -> Dict[str, VersionBoundary]:
+        return {}

@@ -18,7 +18,7 @@ class DefaultSerializerRegistry(SerializerRegistry):
         self._default_priority_stable = sys.maxsize - 10
         self._default_priority_unstable = sys.maxsize - 5
 
-        self._type_registry: Dict[Type, Serializer] = {}
+        self._type_registry: Dict[Type, List[Serializer]] = defaultdict(list)
         self._data_formats_serializer_registry: Dict[str, List[Serializer]] = defaultdict(list)
 
         self._serializer_priorities: Dict[Type[Serializer], int] = {}
@@ -35,73 +35,62 @@ class DefaultSerializerRegistry(SerializerRegistry):
 
     def register_serializer(self, serializer: Serializer, priority: Optional[int] = None) -> None:
         serializer_type = type(serializer)
-        if not serializer.available():
-            _LOG.debug(f"Serializer {serializer_type} cannot be registered")
-            return
-
         if serializer_type in self._serializer_registry:
             raise ValueError(f"Serializer {serializer_type} has been already registered")
 
-        if isinstance(serializer.supported_types(),
-                      Type) and serializer.supported_types() in self._type_registry:  # type: ignore
-            raise ValueError(
-                f"Serializer for type {serializer.supported_types()} has been already registered"
-            )
+        self._serializer_registry[serializer_type] = serializer
+        self._data_formats_serializer_registry[serializer.data_format()].append(serializer)
 
         if priority is None:
             if serializer.stable():
                 priority = self._default_priority_stable
             else:
                 priority = self._default_priority_unstable
-
         self._serializer_priorities[serializer_type] = priority
-        self._serializer_registry[serializer_type] = serializer
 
-        self._data_formats_serializer_registry[serializer.data_format()].append(serializer)
-        # mypy issue: https://github.com/python/mypy/issues/3060
-        if isinstance(serializer.supported_types(), Type):  # type: ignore
-            self._type_registry[cast(Type, serializer.supported_types())] = serializer
+        try:
+            # mypy issue: https://github.com/python/mypy/issues/3060
+            if isinstance(serializer.supported_types(), Type):  # type: ignore
+                self._type_registry[cast(Type, serializer.supported_types())].append(serializer)
+        except (ImportError, ModuleNotFoundError):
+            pass
 
     def unregister_serializer(self, serializer: Serializer):
         serializer_type = type(serializer)
         if serializer_type in self._serializer_registry:
-            # mypy issue: https://github.com/python/mypy/issues/3060
-            if isinstance(serializer.supported_types(), Type):  # type: ignore
-                del self._type_registry[cast(Type, serializer.supported_types())]
             self._data_formats_serializer_registry[serializer.data_format()].remove(serializer)
-
             del self._serializer_priorities[serializer_type]
             del self._serializer_registry[serializer_type]
 
-    def find_serializer_by_type(self, typ: Type) -> Serializer:
-        filter_ser: Optional[Serializer] = None
-        filter_ser_priority = sys.maxsize
+            try:
+                # mypy issue: https://github.com/python/mypy/issues/3060
+                if isinstance(serializer.supported_types(),  # type: ignore
+                              Type) and serializer.supported_types() in self._type_registry:  # type: ignore
+                    del self._type_registry[cast(Type, serializer.supported_types())]
+            except (ImportError, ModuleNotFoundError):
+                pass
+
+    def find_serializer_by_type(self, typ: Type) -> Optional[Serializer]:
+        result: Optional[Serializer] = None
+        priority = sys.maxsize
         for serializer_type, serializer in self._serializer_registry.items():
-            if (
-                    # mypy issue: https://github.com/python/mypy/issues/3060
-                    not isinstance(serializer.supported_types(), Type)  # type: ignore
-                    and serializer.supported_types()(typ)
-                    and self._serializer_priorities[serializer_type] < filter_ser_priority
-            ):
-                filter_ser_priority = self._serializer_priorities[serializer_type]
-                filter_ser = serializer
+            try:
+                if (
+                        # mypy issue: https://github.com/python/mypy/issues/3060
+                        not isinstance(serializer.supported_types(), Type)  # type: ignore
+                        and serializer.supported_types()(typ)
+                        and self._serializer_priorities[serializer_type] < priority
+                ):
+                    priority = self._serializer_priorities[serializer_type]
+                    result = serializer
+            except (ImportError, ModuleNotFoundError):
+                continue
 
-        obj_type_ser: Optional[Serializer] = (
-            self._type_registry[typ] if typ in self._type_registry else None
-        )
-        obj_type_ser_priority = (
-            sys.maxsize
-            if obj_type_ser is None
-            else self._serializer_priorities[type(obj_type_ser)]
-        )
+        for serializer in self._type_registry[typ]:
+            if self._serializer_priorities[type(serializer)] <= priority:
+                result = serializer
 
-        if obj_type_ser is not None:
-            return (
-                cast(Serializer, filter_ser)
-                if filter_ser_priority < obj_type_ser_priority
-                else obj_type_ser
-            )
-        return cast(Serializer, filter_ser)
+        return result
 
     def find_serializer_by_data_format(self, data_format: str) -> Optional[Serializer]:
         serializer: Optional[Serializer] = None
@@ -112,6 +101,12 @@ class DefaultSerializerRegistry(SerializerRegistry):
                 serializer = ser
                 serializer_priority = self._serializer_priorities[ser_type]
         return serializer
+
+    def reload_registry(self) -> None:
+        for typ, serializer in self._serializer_registry.copy().items():
+            priority = self._serializer_priorities[typ]
+            self.unregister_serializer(serializer)
+            self.register_serializer(serializer, priority)
 
     def _fetch_serializers_from(self, module: ModuleType) -> Iterable[Serializer]:
         stable_serializer_modules = dir(module)

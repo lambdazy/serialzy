@@ -1,7 +1,7 @@
-from typing import Any, BinaryIO, Callable, Dict, Type, Union
+from typing import Any, BinaryIO, Callable, Dict, Type, Union, Optional
 from unittest import TestCase
 
-from serialzy.api import Serializer, Schema
+from serialzy.api import Serializer, Schema, VersionBoundary
 from serialzy.registry import DefaultSerializerRegistry
 
 
@@ -11,6 +11,9 @@ def generate_serializer(
         stable: bool = True,
 ) -> Type[Serializer]:
     class TestSerializer(Serializer):
+        def requirements(self) -> Dict[str, VersionBoundary]:
+            return {}
+
         def schema(self, typ: type) -> Schema:
             pass
 
@@ -26,7 +29,7 @@ def generate_serializer(
         def _serialize(self, obj: Any, dest: BinaryIO) -> None:
             pass
 
-        def _deserialize(self, source: BinaryIO, schema_type: Type) -> Any:
+        def _deserialize(self, source: BinaryIO, schema_type: Type, user_type: Optional[Type] = None) -> Any:
             pass
 
         def stable(self) -> bool:
@@ -60,7 +63,9 @@ class SerializationRegistryTests(TestCase):
     def test_register_unavailable_serializer(self):
         serializer = generate_serializer(available=False, supported_types=A)()
         self.registry.register_serializer(serializer)
-        self.assertNotEqual(self.registry.find_serializer_by_type(A), serializer)
+        by_type = self.registry.find_serializer_by_type(A)
+        self.assertEqual(by_type, serializer)
+        self.assertFalse(by_type.available())
 
     def test_register_stable_serializer(self):
         serializer = generate_serializer(available=True, stable=True, supported_types=A)()
@@ -119,6 +124,9 @@ class SerializationRegistryTests(TestCase):
     def test_register_serializer_for_the_same_type(self):
         serializer_1 = generate_serializer(supported_types=A)()
         serializer_2 = generate_serializer(supported_types=A)()
-        self.registry.register_serializer(serializer_1)
-        with self.assertRaises(ValueError):
-            self.registry.register_serializer(serializer_2)
+
+        self.registry.register_serializer(serializer_1, 2)
+        self.assertEqual(serializer_1, self.registry.find_serializer_by_type(A))
+
+        self.registry.register_serializer(serializer_2, 1)
+        self.assertEqual(serializer_2, self.registry.find_serializer_by_type(A))

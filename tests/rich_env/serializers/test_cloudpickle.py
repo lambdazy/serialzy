@@ -45,6 +45,7 @@ class CloudpickleSerializationTests(TestCase):
         self.assertEqual(StandardSchemaFormats.pickled_type.name, schema.schema_format)
         self.assertTrue(len(schema.schema_content) > 0)
         self.assertIn("cloudpickle", serializer.meta())
+        self.assertIn("cloudpickle", serializer.requirements())
 
     def test_resolve(self):
         class B:

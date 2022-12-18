@@ -2,7 +2,7 @@ import logging
 import inspect
 from typing import Any, BinaryIO, Callable, Dict, Type, Union, Optional
 
-from serialzy.api import StandardDataFormats, Schema
+from serialzy.api import StandardDataFormats, Schema, VersionBoundary
 from serialzy.base import DefaultSchemaSerializerByValue
 from serialzy.utils import cached_installed_packages
 from packaging import version  # type: ignore
@@ -61,3 +61,6 @@ class ProtoMessageSerializer(DefaultSchemaSerializerByValue):
             _LOG.warning(f'Installed version of pure-protobuf {cached_installed_packages["pure-protobuf"]} '
                          f'is older than used for serialization {schema.meta["pure-protobuf"]}')
         return typ
+
+    def requirements(self) -> Dict[str, VersionBoundary]:
+        return {'pure-protobuf': VersionBoundary()}
