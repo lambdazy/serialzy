@@ -31,6 +31,7 @@ class ProtoSerializationTests(TestCase):
         self.assertEqual(test_message.a, serialize_and_deserialize(serializer, test_message).a)
         self.assertTrue(serializer.stable())
         self.assertIn("pure-protobuf", serializer.meta())
+        self.assertIn("pure-protobuf", serializer.requirements())
 
     def test_proto_serialization_new_type(self):
         @message

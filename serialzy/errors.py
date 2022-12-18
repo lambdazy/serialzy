@@ -1,0 +1,2 @@
+class SerialzyError(Exception):
+    pass

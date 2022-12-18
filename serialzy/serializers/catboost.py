@@ -6,8 +6,9 @@ from typing import BinaryIO, Callable, Dict, Type, Union, Any, Optional
 
 from packaging import version  # type: ignore
 
-from serialzy.api import Schema
+from serialzy.api import Schema, VersionBoundary
 from serialzy.base import DefaultSchemaSerializerByReference
+from serialzy.errors import SerialzyError
 from serialzy.utils import cached_installed_packages
 
 _LOG = logging.getLogger(__name__)
@@ -41,13 +42,16 @@ class CatboostBaseSerializer(DefaultSchemaSerializerByReference, ABC):
                          f'is older than used for serialization {schema.meta["catboost"]}')
         return typ
 
+    def requirements(self) -> Dict[str, VersionBoundary]:
+        return {'catboost': VersionBoundary()}
+
 
 # noinspection PyPackageRequirements
 class CatboostPoolSerializer(CatboostBaseSerializer):
     def _serialize(self, obj: Any, dest: BinaryIO) -> None:
         with tempfile.NamedTemporaryFile() as handle:
             if not obj.is_quantized():  # type: ignore
-                obj.quantize()  # type: ignore
+                raise SerialzyError('Only quantized pools can be serialized')
             obj.save(handle.name)  # type: ignore
             while True:
                 data = handle.read(8096)

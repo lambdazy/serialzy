@@ -35,6 +35,7 @@ class UnionSerializationTests(TestCase):
         self.assertTrue(serializer.stable())
         self.assertEqual("serialzy_union", serializer.data_format())
         self.assertTrue("serialzy" in serializer.meta())
+        self.assertTrue(len(serializer.requirements()) == 0)
 
     def test_optional_schema(self):
         typ = Optional[str]

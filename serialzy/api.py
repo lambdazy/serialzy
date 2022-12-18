@@ -22,12 +22,18 @@ class StandardSchemaFormats(Enum):
     no_schema = "no_schema"
 
 
-@dataclass
+@dataclass(frozen=True)
 class Schema:
     data_format: str
     schema_format: str
     schema_content: str = ''
     meta: Dict[str, str] = field(default_factory=lambda: {})
+
+
+@dataclass(frozen=True)
+class VersionBoundary:
+    greater_than: Optional[str] = None
+    less_than: Optional[str] = None
 
 
 class Serializer(abc.ABC):
@@ -123,6 +129,12 @@ class Serializer(abc.ABC):
         :return: Type used for python representation of the schema
         """
 
+    @abc.abstractmethod
+    def requirements(self) -> Dict[str, VersionBoundary]:
+        """
+        :return: the requirements (libraries) which are needed to be installed to make serializer available
+        """
+
     def _validate_schema(self, schema: Schema) -> None:
         if schema.data_format != self.data_format():
             raise ValueError(
@@ -190,4 +202,10 @@ class SerializerRegistry(abc.ABC):
         """
         :param data_format: data format to resolve serializer
         :return: Serializer if there is a serializer for that data format, None otherwise
+        """
+
+    @abc.abstractmethod
+    def reload_registry(self) -> None:
+        """
+        reloads all registered serializers, useful if libraries are updated
         """

@@ -8,7 +8,7 @@ from typing import Type, Dict, Union, BinaryIO, Any, cast, Optional, Callable, T
 from packaging import version  # type: ignore
 from typing_extensions import get_args, get_origin
 
-from serialzy.api import Serializer, Schema, SerializerRegistry
+from serialzy.api import Serializer, Schema, SerializerRegistry, VersionBoundary
 from serialzy.utils import cached_installed_packages
 from serialzy.version import __version__
 
@@ -116,6 +116,9 @@ class UnionSerializerBase(Serializer, ABC):
             raise ValueError(f'Cannot find serializer for data format {schema.data_format}')
         return serializer.resolve(schema)
 
+    def requirements(self) -> Dict[str, VersionBoundary]:
+        return {}
+
 
 class UnionSerializerStable(UnionSerializerBase):
     def supported_types(self) -> Union[Type, Callable[[Type], bool]]:
@@ -127,7 +130,7 @@ class UnionSerializerStable(UnionSerializerBase):
     def __check_args(self, args: Tuple[Any, ...]) -> bool:
         for arg in args:
             serializer = self._registry.find_serializer_by_type(arg)
-            if serializer is None or not serializer.stable():
+            if serializer is None or not serializer.available() or not serializer.stable():
                 return False
         return True
 
@@ -142,6 +145,6 @@ class UnionSerializerUnstable(UnionSerializerBase):
     def __check_args(self, args: Tuple[Any, ...]) -> bool:
         for arg in args:
             serializer = self._registry.find_serializer_by_type(arg)
-            if serializer is None:
+            if serializer is None or not serializer.available():
                 return False
         return True
