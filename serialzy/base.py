@@ -70,5 +70,12 @@ class DefaultSchemaSerializerByReference(Serializer, ABC):
         info = json.loads(schema.schema_content)
         if 'module' not in info or 'name' not in info:
             raise ValueError(f'Invalid schema content: {schema.schema_content}')
-        typ = getattr(importlib.import_module(info['module']), info['name'])
+
+        module = info['module']
+        name = info['name']
+        # NoneType cannot be imported from builtin
+        if module == 'builtins' and name == 'NoneType':
+            return type(None)
+
+        typ = getattr(importlib.import_module(module), name)
         return cast(type, typ)

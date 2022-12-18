@@ -18,9 +18,6 @@ class EmptyEnvTests(TestCase):
         serializer = self.registry.find_serializer_by_data_format(StandardDataFormats.proto.name)
         self.assertIsNone(serializer)
 
-        serializer = self.registry.find_serializer_by_data_format(StandardDataFormats.primitive_type.name)
-        self.assertIsNone(serializer)
-
         serializer = self.registry.find_serializer_by_data_format(StandardDataFormats.pickle.name)
         self.assertIsNone(serializer)
 
