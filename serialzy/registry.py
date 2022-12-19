@@ -3,12 +3,13 @@ import logging
 import sys
 from collections import defaultdict
 from types import ModuleType
-from typing import Dict, List, Optional, Type, cast, Iterable
+from typing import Dict, List, Optional, Type, cast, Iterable, Any
 
 import serialzy.serializers
 from serialzy.api import Serializer, SerializerRegistry
 from serialzy.cloudpickle import CloudpickleSerializer
 from serialzy.utils import load_all_modules_from
+from serialzy.types import get_type
 
 _LOG = logging.getLogger(__name__)
 
@@ -91,6 +92,10 @@ class DefaultSerializerRegistry(SerializerRegistry):
                 result = serializer
 
         return result
+
+    def find_serializer_by_instance(self, obj: Any) -> Optional[Serializer]:
+        typ = get_type(obj)
+        return self.find_serializer_by_type(typ)
 
     def find_serializer_by_data_format(self, data_format: str) -> Optional[Serializer]:
         serializer: Optional[Serializer] = None

@@ -33,7 +33,7 @@ class UnionSerializationTests(TestCase):
         self.assertEqual(obj, deserialized)
 
         self.assertTrue(serializer.stable())
-        self.assertEqual("serialzy_union", serializer.data_format())
+        self.assertEqual("serialzy_union_stable", serializer.data_format())
         self.assertTrue("serialzy" in serializer.meta())
         self.assertTrue(len(serializer.requirements()) == 0)
 
@@ -43,7 +43,7 @@ class UnionSerializationTests(TestCase):
         schema = serializer.schema(typ)
 
         self.assertEqual("serialzy_union_schema", schema.schema_format)
-        self.assertEqual("serialzy_union", schema.data_format)
+        self.assertEqual("serialzy_union_stable", schema.data_format)
         self.assertTrue("serialzy" in schema.meta)
 
     def test_optional_resolve(self):
@@ -67,7 +67,7 @@ class UnionSerializationTests(TestCase):
         with self.assertRaisesRegex(ValueError, "Invalid schema format*"):
             serializer.resolve(
                 Schema(
-                    'serialzy_union',
+                    'serialzy_union_stable',
                     'invalid schema',
                     schema.schema_content,
                     {'serialzy': '0.0.0'}
@@ -76,12 +76,12 @@ class UnionSerializationTests(TestCase):
 
         with self.assertLogs() as cm:
             serializer.resolve(
-                Schema('serialzy_union', 'serialzy_union_schema', schema.schema_content,
+                Schema('serialzy_union_stable', 'serialzy_union_schema', schema.schema_content,
                        {'serialzy': '10000.0.0'}))
             self.assertRegex(cm.output[0], 'WARNING:serialzy.serializers.union:Installed version of serialzy*')
 
         with self.assertLogs() as cm:
-            serializer.resolve(Schema('serialzy_union', 'serialzy_union_schema', schema.schema_content, {}))
+            serializer.resolve(Schema('serialzy_union_stable', 'serialzy_union_schema', schema.schema_content, {}))
             self.assertRegex(cm.output[0], 'WARNING:serialzy.serializers.union:No serialzy version in meta*')
 
     def test_stable_unstable_union(self):
@@ -91,13 +91,13 @@ class UnionSerializationTests(TestCase):
 
         typ = Union[str, B]
         serializer = self.registry.find_serializer_by_type(typ)
-        self.assertEqual("serialzy_union", serializer.data_format())
+        self.assertEqual("serialzy_union_unstable", serializer.data_format())
         self.assertTrue("serialzy" in serializer.meta())
         self.assertFalse(serializer.stable())
 
         typ = Union[str, int, type(None)]
         serializer = self.registry.find_serializer_by_type(typ)
-        self.assertEqual("serialzy_union", serializer.data_format())
+        self.assertEqual("serialzy_union_stable", serializer.data_format())
         self.assertTrue("serialzy" in serializer.meta())
         self.assertTrue(serializer.stable())
 

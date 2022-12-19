@@ -43,9 +43,7 @@ class ProtoMessageSerializer(DefaultSchemaSerializerByValue):
         return True
 
     def supported_types(self) -> Union[Type, Callable[[Type], bool]]:
-        from pure_protobuf.dataclasses_ import Message  # type: ignore
-
-        return lambda t: inspect.isclass(t) and issubclass(t, Message)
+        return lambda t: self._check_is_message(t)
 
     def data_format(self) -> str:
         return StandardDataFormats.proto.name
@@ -64,3 +62,12 @@ class ProtoMessageSerializer(DefaultSchemaSerializerByValue):
 
     def requirements(self) -> Dict[str, VersionBoundary]:
         return {'pure-protobuf': VersionBoundary()}
+
+    def _check_is_message(self, obj: Any) -> bool:
+        from pure_protobuf.dataclasses_ import Message  # type: ignore
+        try:
+            return inspect.isclass(obj) and issubclass(obj, Message)
+        except TypeError:
+            # for some reason `inspect.isclass(list[str])` returns true,
+            # but `issubclass(list[str], Message)` raises TypeError
+            return False

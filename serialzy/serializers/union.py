@@ -80,13 +80,10 @@ class UnionSerializerBase(Serializer, ABC):
     def available(self) -> bool:
         return True
 
-    def data_format(self) -> str:
-        return "serialzy_union"
-
     def meta(self) -> Dict[str, str]:
         return {'serialzy': __version__}
 
-    def schema(self, typ: type) -> Schema:
+    def schema(self, typ: Type) -> Schema:
         args = get_args(typ)
         schemas = [dataclasses.asdict(cast(Serializer, self._registry.find_serializer_by_type(x)).schema(x))
                    for x in args]
@@ -134,6 +131,9 @@ class UnionSerializerStable(UnionSerializerBase):
                 return False
         return True
 
+    def data_format(self) -> str:
+        return "serialzy_union_stable"
+
 
 class UnionSerializerUnstable(UnionSerializerBase):
     def supported_types(self) -> Union[Type, Callable[[Type], bool]]:
@@ -143,8 +143,13 @@ class UnionSerializerUnstable(UnionSerializerBase):
         return False
 
     def __check_args(self, args: Tuple[Any, ...]) -> bool:
+        all_stable = True
         for arg in args:
             serializer = self._registry.find_serializer_by_type(arg)
             if serializer is None or not serializer.available():
                 return False
-        return True
+            all_stable = all_stable and serializer.stable()
+        return not all_stable
+
+    def data_format(self) -> str:
+        return "serialzy_union_unstable"
