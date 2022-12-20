@@ -22,7 +22,7 @@ class DefaultSchemaSerializerByValue(Serializer, ABC):
         except:
             return False
 
-    def schema(self, typ: type) -> Schema:
+    def schema(self, typ: Type) -> Schema:
         import cloudpickle  # type: ignore
         return Schema(
             self.data_format(),
@@ -52,7 +52,7 @@ class DefaultSchemaSerializerByValue(Serializer, ABC):
 class DefaultSchemaSerializerByReference(Serializer, ABC):
     SCHEMA_FORMAT = "serialzy_python_type_reference"
 
-    def schema(self, typ: type) -> Schema:
+    def schema(self, typ: Type) -> Schema:
         return Schema(
             self.data_format(),
             self.SCHEMA_FORMAT,

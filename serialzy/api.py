@@ -8,6 +8,8 @@ from typing import Any, BinaryIO, Callable, Dict, Optional, Type, Union
 
 from packaging import version  # type: ignore
 
+from serialzy.types import get_type
+
 _LOG = logging.getLogger(__name__)
 
 
@@ -47,7 +49,7 @@ class Serializer(abc.ABC):
         :return: None
         """
 
-        typ = type(obj)
+        typ = get_type(obj)
         # check that obj type is valid
         self._check_type(typ)
         # write schema header
@@ -116,7 +118,7 @@ class Serializer(abc.ABC):
         """
 
     @abc.abstractmethod
-    def schema(self, typ: type) -> Schema:
+    def schema(self, typ: Type) -> Schema:
         """
         :param typ: type of object for serialization
         :return: schema for the object
@@ -194,6 +196,13 @@ class SerializerRegistry(abc.ABC):
     def find_serializer_by_type(self, typ: Type) -> Optional[Serializer]:
         """
         :param typ: python Type needed to serialize
+        :return: corresponding serializer or None
+        """
+
+    @abc.abstractmethod
+    def find_serializer_by_instance(self, obj: Any) -> Optional[Serializer]:
+        """
+        :param obj: instance needed to serialize
         :return: corresponding serializer or None
         """
 

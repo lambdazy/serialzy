@@ -14,7 +14,7 @@ def generate_serializer(
         def requirements(self) -> Dict[str, VersionBoundary]:
             return {}
 
-        def schema(self, typ: type) -> Schema:
+        def schema(self, typ: Type) -> Schema:
             pass
 
         def resolve(self, schema: Schema) -> Type:
