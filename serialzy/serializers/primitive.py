@@ -21,6 +21,8 @@ class PrimitiveSerializer(DefaultSchemaSerializerByReference):
         read = source.read().decode("utf-8")
         if schema_type == type(None):
             return None
+        elif schema_type == bool:
+            return read == "True"
         return schema_type(read)
 
     def supported_types(self) -> Union[Type, Callable[[Type], bool]]:

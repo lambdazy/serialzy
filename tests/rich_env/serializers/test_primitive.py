@@ -27,6 +27,9 @@ class PrimitiveSerializationTests(TestCase):
         var = True
         self.assertEqual(var, serialize_and_deserialize(serializer, var))
 
+        var = False
+        self.assertEqual(var, serialize_and_deserialize(serializer, var))
+
         var = None
         self.assertEqual(var, serialize_and_deserialize(serializer, var))
 
