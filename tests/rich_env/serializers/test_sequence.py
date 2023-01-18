@@ -108,3 +108,18 @@ class SequenceSerializationTests(TestCase):
     def _check_serialized_and_deserialized(self, obj: Any, serializer: Serializer) -> None:
         deserialized_obj = serialize_and_deserialize(serializer, obj)
         self.assertEqual(obj, deserialized_obj)
+
+    def test_stable_serialization_tuple_various_types(self):
+        serializer = self.registry.find_serializer_by_type(Tuple[str, int])
+        self.assertEqual(SequenceSerializerStable, type(serializer))
+        self._check_serialized_and_deserialized(("str", 42), serializer)
+
+    def test_stable_serialization_tuple_of_untyped_lists(self):
+        serializer = self.registry.find_serializer_by_type(Tuple[List, List])
+        self.assertEqual(SequenceSerializerUnstable, type(serializer))
+        self._check_serialized_and_deserialized(([1], [2]), serializer)
+
+    def test_stable_serialization_tuple_of_typed_lists(self):
+        serializer = self.registry.find_serializer_by_type(Tuple[List[int], List[int]])
+        self.assertEqual(SequenceSerializerStable, type(serializer))
+        self._check_serialized_and_deserialized(([1], [2]), serializer)

@@ -139,7 +139,7 @@ class SequenceSerializerUnstable(SequenceSerializerBase):
             return False
 
         serializer = self._registry.find_serializer_by_type(args[0])
-        if serializer is None or not serializer.available() or serializer.stable():
+        if serializer is None or not serializer.available():
             return False
         return True
 
