@@ -116,9 +116,10 @@ class SequenceSerializerStable(SequenceSerializerBase):
         elif args[0] == EmptyListContent:
             return True
 
-        serializer = self._registry.find_serializer_by_type(args[0])
-        if serializer is None or not serializer.available() or not serializer.stable():
-            return False
+        for arg in args:
+            serializer = self._registry.find_serializer_by_type(arg)
+            if serializer is None or not serializer.available() or not serializer.stable():
+                return False
         return True
 
     def data_format(self) -> str:
@@ -138,9 +139,10 @@ class SequenceSerializerUnstable(SequenceSerializerBase):
         elif args[0] == EmptyListContent:
             return False
 
-        serializer = self._registry.find_serializer_by_type(args[0])
-        if serializer is None or not serializer.available():
-            return False
+        for arg in args:
+            serializer = self._registry.find_serializer_by_type(arg)
+            if serializer is None or not serializer.available():
+                return False
         return True
 
     def data_format(self) -> str:
