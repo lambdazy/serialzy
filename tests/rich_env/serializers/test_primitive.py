@@ -63,7 +63,7 @@ class PrimitiveSerializationTests(TestCase):
         ))
         self.assertEqual(type(None), typ)
 
-        with self.assertRaisesRegex(ValueError, "Invalid data format*"):
+        with self.assertRaisesRegex(TypeError, "Invalid data format*"):
             serializer.resolve(
                 Schema(
                     StandardDataFormats.proto.name,
@@ -92,7 +92,7 @@ class PrimitiveSerializationTests(TestCase):
     def test_invalid_types(self):
         serializer = self.registry.find_serializer_by_type(int)
 
-        with self.assertRaisesRegex(ValueError, 'Invalid object type*'):
+        with self.assertRaisesRegex(TypeError, 'Invalid object type*'):
             with tempfile.TemporaryFile() as file:
                 serializer.serialize([1, 1, 1], file)
 
@@ -101,5 +101,5 @@ class PrimitiveSerializationTests(TestCase):
             file.flush()
             file.seek(0)
 
-            with self.assertRaisesRegex(ValueError, 'Cannot deserialize data with schema type*'):
+            with self.assertRaisesRegex(TypeError, 'Cannot deserialize data with schema type*'):
                 serializer.deserialize(file, List[int])

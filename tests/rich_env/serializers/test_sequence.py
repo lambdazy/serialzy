@@ -91,10 +91,10 @@ class SequenceSerializationTests(TestCase):
         self._check_serialized_and_deserialized([A(1), A(2), A(3)], serializer)
         self._check_serialized_and_deserialized((A(1), A(2), A(3)), serializer)
 
-        with self.assertRaisesRegex(ValueError, "Invalid object type*"):
+        with self.assertRaisesRegex(TypeError, "Invalid object type*"):
             self._check_serialized_and_deserialized([], serializer)
 
-        with self.assertRaisesRegex(ValueError, "Invalid object type*"):
+        with self.assertRaisesRegex(TypeError, "Invalid object type*"):
             self._check_serialized_and_deserialized((), serializer)
 
     def _check_serializer_found_by_type(self, typ: Type) -> None:
