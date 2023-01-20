@@ -167,7 +167,7 @@ class Serializer(abc.ABC):
         supported = self.supported_types()
         # mypy issue: https://github.com/python/mypy/issues/3060
         if (isinstance(supported, Type) and typ != supported) or (  # type: ignore
-                not isinstance(supported, Type) and not supported(typ)):  # type: ignore
+            not isinstance(supported, Type) and not supported(typ)):  # type: ignore
             raise ValueError(f'Invalid object type {typ} for the serializer {type(self)}')
 
     @staticmethod
@@ -190,6 +190,13 @@ class SerializerRegistry(abc.ABC):
         """
         :param serializer: serializer to unregister
         :return:
+        """
+
+    @abc.abstractmethod
+    def is_registered(self, serializer: Serializer) -> bool:
+        """
+        :param serializer: serializer to unregister
+        :return: True if serializer is registered, False otherwise
         """
 
     @abc.abstractmethod
