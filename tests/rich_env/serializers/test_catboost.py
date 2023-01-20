@@ -48,7 +48,7 @@ class CatboostPoolSerializationTests(TestCase):
     def test_invalid_types(self):
         serializer = self.registry.find_serializer_by_type(Pool)
 
-        with self.assertRaisesRegex(ValueError, 'Invalid object type*'):
+        with self.assertRaisesRegex(TypeError, 'Invalid object type*'):
             with tempfile.TemporaryFile() as file:
                 serializer.serialize(1, file)
 
@@ -63,7 +63,7 @@ class CatboostPoolSerializationTests(TestCase):
             file.flush()
             file.seek(0)
 
-            with self.assertRaisesRegex(ValueError, 'Cannot deserialize data with schema type*'):
+            with self.assertRaisesRegex(TypeError, 'Cannot deserialize data with schema type*'):
                 serializer.deserialize(file, int)
 
     def test_schema(self):
@@ -85,7 +85,7 @@ class CatboostPoolSerializationTests(TestCase):
             }), {'catboost': '0.0.0'}))
         self.assertEqual(Pool, typ)
 
-        with self.assertRaisesRegex(ValueError, 'Invalid data format*'):
+        with self.assertRaisesRegex(TypeError, 'Invalid data format*'):
             serializer.resolve(
                 Schema('invalid format', 'serialzy_python_type_reference', 'content', {'catboost': '1.0.0'}))
 
@@ -175,7 +175,7 @@ class CatboostModelSerializationTests(TestCase):
     def test_invalid_types(self):
         serializer = self.registry.find_serializer_by_type(CatBoostClassifier)
 
-        with self.assertRaisesRegex(ValueError, 'Invalid object type*'):
+        with self.assertRaisesRegex(TypeError, 'Invalid object type*'):
             with tempfile.TemporaryFile() as file:
                 serializer.serialize(1, file)
 
@@ -193,5 +193,5 @@ class CatboostModelSerializationTests(TestCase):
             file.flush()
             file.seek(0)
 
-            with self.assertRaisesRegex(ValueError, 'Cannot deserialize data with schema type*'):
+            with self.assertRaisesRegex(TypeError, 'Cannot deserialize data with schema type*'):
                 serializer.deserialize(file, int)

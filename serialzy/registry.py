@@ -27,6 +27,8 @@ class DefaultSerializerRegistry(SerializerRegistry):
 
         load_all_modules_from(serialzy.serializers)
         for serializer in self._fetch_serializers_from(serialzy.serializers):
+            if self.is_registered(serializer):
+                continue
             if serializer.stable():
                 self.register_serializer(serializer, self._default_priority_stable)
             else:
@@ -71,16 +73,19 @@ class DefaultSerializerRegistry(SerializerRegistry):
             except (ImportError, ModuleNotFoundError):
                 pass
 
+    def is_registered(self, serializer: Serializer) -> bool:
+        return type(serializer) in self._serializer_registry
+
     def find_serializer_by_type(self, typ: Type) -> Optional[Serializer]:
         result: Optional[Serializer] = None
         priority = sys.maxsize
         for serializer_type, serializer in self._serializer_registry.items():
             try:
                 if (
-                        # mypy issue: https://github.com/python/mypy/issues/3060
-                        not isinstance(serializer.supported_types(), Type)  # type: ignore
-                        and serializer.supported_types()(typ)
-                        and self._serializer_priorities[serializer_type] < priority
+                    # mypy issue: https://github.com/python/mypy/issues/3060
+                    not isinstance(serializer.supported_types(), Type)  # type: ignore
+                    and serializer.supported_types()(typ)
+                    and self._serializer_priorities[serializer_type] < priority
                 ):
                     priority = self._serializer_priorities[serializer_type]
                     result = serializer

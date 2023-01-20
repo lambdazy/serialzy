@@ -5,8 +5,9 @@ import logging
 from abc import ABC
 from io import BytesIO
 from packaging import version
-from typing import Any, BinaryIO, Type, Optional, Dict, cast, Union, Callable, Tuple
+from typing import Any, BinaryIO, Type, Optional, Dict, cast, Union, Callable, Tuple, List
 
+from serialzy.serializers.ellipsis import EllipsisSerializer
 from serialzy.utils import cached_installed_packages
 from typing_extensions import get_args, get_origin
 
@@ -28,12 +29,15 @@ class SequenceSerializerBase(Serializer, ABC):
         length = len(obj)
         dest.write(length.to_bytes(length=8, byteorder='little', signed=False))
 
-        arg_type: Type = get_args(get_type(obj))[0]
-        serializer = cast(Serializer, self._registry.find_serializer_by_type(arg_type))
+        args = get_args(get_type(obj))
+        serializers = self.__serializers_from_type_args(args)
 
-        for element in obj:
+        for i in range(len(obj)):
             with BytesIO() as handle:
-                serializer.serialize(element, handle)
+                if len(serializers) == 1:
+                    cast(Serializer, serializers[0]).serialize(obj[i], handle)
+                else:
+                    cast(Serializer, serializers[i]).serialize(obj[i], handle)
                 handle.flush()
 
                 serialized_value = handle.getvalue()
@@ -45,8 +49,8 @@ class SequenceSerializerBase(Serializer, ABC):
         self._check_types_valid(schema_type, user_type)
 
         length = int.from_bytes(source.read(8), byteorder='little', signed=False)
-        arg_type = get_args(schema_type)[0]
-        serializer = cast(Serializer, self._registry.find_serializer_by_type(arg_type))
+        args = get_args(schema_type)
+        serializers = self.__serializers_from_type_args(args)
 
         result = list()
         for i in range(length):
@@ -55,7 +59,12 @@ class SequenceSerializerBase(Serializer, ABC):
                 handle.write(source.read(elem_length))
                 handle.flush()
                 handle.seek(0)
-                result.append(serializer.deserialize(handle))
+
+                if len(serializers) == 1:
+                    obj = cast(Serializer, serializers[0]).deserialize(handle)
+                else:
+                    obj = cast(Serializer, serializers[i]).deserialize(handle)
+                result.append(obj)
 
         return get_origin(schema_type)(result)  # type: ignore
 
@@ -66,15 +75,15 @@ class SequenceSerializerBase(Serializer, ABC):
         return {'serialzy': __version__}
 
     def schema(self, typ: Type) -> Schema:
-        arg: Type = get_args(typ)[0]
-        serializer = cast(Serializer, self._registry.find_serializer_by_type(arg))
+        args: Tuple[Type, ...] = get_args(typ)
         # noinspection PyProtectedMember,PyUnresolvedReferences
         schema_dict = {
             "origin": {
                 "module": typ.__module__,
                 "name": typ.__name__ if hasattr(typ, "__name__") else typ._name  # for typing.List
             },
-            "arg": dataclasses.asdict(serializer.schema(arg))
+            "args": [dataclasses.asdict(cast(Serializer, self._registry.find_serializer_by_type(arg)).schema(arg)) for
+                     arg in args]
         }
         return Schema(self.data_format(), self.SCHEMA_FORMAT, json.dumps(schema_dict), self.meta())
 
@@ -92,15 +101,33 @@ class SequenceSerializerBase(Serializer, ABC):
         schema_dict = json.loads(schema.schema_content)
         origin = schema_dict["origin"]
         typ = getattr(importlib.import_module(origin["module"]), origin["name"])
+        schemas = [Schema(**arg) for arg in schema_dict["args"]]
 
-        schema = Schema(**schema_dict["arg"])
-        serializer = cast(Serializer, self._registry.find_serializer_by_data_format(schema.data_format))
-        arg_type = serializer.resolve(schema)
-
-        return typ[arg_type]  # type: ignore
+        if typ == List:
+            serializer = cast(Serializer, self._registry.find_serializer_by_data_format(schemas[0].data_format))
+            arg_type = serializer.resolve(schemas[0])
+            return typ[arg_type]  # type: ignore
+        else:  # tuple
+            if len(schemas) == 2 and schemas[1].data_format == EllipsisSerializer.ellipsis_data_format:
+                serializer = cast(Serializer, self._registry.find_serializer_by_data_format(schemas[0].data_format))
+                arg_type = serializer.resolve(schemas[0])
+                return typ[arg_type, ...]  # type: ignore
+            else:
+                typ_args = tuple(
+                    cast(Serializer, self._registry.find_serializer_by_data_format(s.data_format)).resolve(s) for s in
+                    schemas)
+                return typ[typ_args]  # type: ignore
 
     def requirements(self) -> Dict[str, VersionBoundary]:
         return {}
+
+    def __serializers_from_type_args(self, args: Tuple[Any, ...]) -> List[Serializer]:
+        serializers: List[Serializer]
+        if (len(args) == 2 and args[1] == Ellipsis) or len(args) == 1:  # tuple with ellipsis or list
+            serializers = [cast(Serializer, self._registry.find_serializer_by_type(args[0]))]
+        else:
+            serializers = [cast(Serializer, self._registry.find_serializer_by_type(arg)) for arg in args]
+        return serializers
 
 
 class SequenceSerializerStable(SequenceSerializerBase):
@@ -116,9 +143,10 @@ class SequenceSerializerStable(SequenceSerializerBase):
         elif args[0] == EmptyListContent:
             return True
 
-        serializer = self._registry.find_serializer_by_type(args[0])
-        if serializer is None or not serializer.available() or not serializer.stable():
-            return False
+        for arg in args:
+            serializer = self._registry.find_serializer_by_type(arg)
+            if serializer is None or not serializer.available() or not serializer.stable():
+                return False
         return True
 
     def data_format(self) -> str:
@@ -138,9 +166,10 @@ class SequenceSerializerUnstable(SequenceSerializerBase):
         elif args[0] == EmptyListContent:
             return False
 
-        serializer = self._registry.find_serializer_by_type(args[0])
-        if serializer is None or not serializer.available():
-            return False
+        for arg in args:
+            serializer = self._registry.find_serializer_by_type(arg)
+            if serializer is None or not serializer.available():
+                return False
         return True
 
     def data_format(self) -> str:

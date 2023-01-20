@@ -99,7 +99,7 @@ class ProtoSerializationTests(TestCase):
         self.assertEqual(TestMessage.__module__, typ.__module__)
         self.assertEqual(TestMessage.__name__, typ.__name__)
 
-        with self.assertRaisesRegex(ValueError, "Invalid data format*"):
+        with self.assertRaisesRegex(TypeError, "Invalid data format*"):
             serializer.resolve(
                 Schema(
                     StandardDataFormats.primitive_type.name,
@@ -145,7 +145,7 @@ class ProtoSerializationTests(TestCase):
 
         serializer = self.registry.find_serializer_by_type(TestMessage)
 
-        with self.assertRaisesRegex(ValueError, 'Invalid object type*'):
+        with self.assertRaisesRegex(TypeError, 'Invalid object type*'):
             with tempfile.TemporaryFile() as file:
                 serializer.serialize(1, file)
 

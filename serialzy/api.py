@@ -139,7 +139,7 @@ class Serializer(abc.ABC):
 
     def _validate_schema(self, schema: Schema) -> None:
         if schema.data_format != self.data_format():
-            raise ValueError(
+            raise TypeError(
                 f"Invalid data format {schema.data_format}, expected {self.data_format()}"
             )
 
@@ -167,13 +167,13 @@ class Serializer(abc.ABC):
         supported = self.supported_types()
         # mypy issue: https://github.com/python/mypy/issues/3060
         if (isinstance(supported, Type) and typ != supported) or (  # type: ignore
-                not isinstance(supported, Type) and not supported(typ)):  # type: ignore
-            raise ValueError(f'Invalid object type {typ} for the serializer {type(self)}')
+            not isinstance(supported, Type) and not supported(typ)):  # type: ignore
+            raise TypeError(f'Invalid object type {typ} for the serializer {type(self)}')
 
     @staticmethod
     def _check_types_valid(schema_type: Type, user_type: Optional[Type]) -> None:
         if user_type is not None and user_type != schema_type:
-            raise ValueError(f'Cannot deserialize data with schema type {schema_type} into type {user_type}')
+            raise TypeError(f'Cannot deserialize data with schema type {schema_type} into type {user_type}')
 
 
 class SerializerRegistry(abc.ABC):
@@ -190,6 +190,13 @@ class SerializerRegistry(abc.ABC):
         """
         :param serializer: serializer to unregister
         :return:
+        """
+
+    @abc.abstractmethod
+    def is_registered(self, serializer: Serializer) -> bool:
+        """
+        :param serializer: serializer to unregister
+        :return: True if serializer is registered, False otherwise
         """
 
     @abc.abstractmethod

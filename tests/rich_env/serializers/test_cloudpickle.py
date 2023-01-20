@@ -59,7 +59,7 @@ class CloudpickleSerializationTests(TestCase):
         self.assertEqual(B.__module__, typ.__module__)
         self.assertEqual(B.__name__, typ.__name__)
 
-        with self.assertRaisesRegex(ValueError, "Invalid data format*"):
+        with self.assertRaisesRegex(TypeError, "Invalid data format*"):
             serializer.resolve(
                 Schema(
                     StandardDataFormats.proto.name,
@@ -126,5 +126,5 @@ class CloudpickleSerializationTests(TestCase):
             file.flush()
             file.seek(0)
 
-            with self.assertRaisesRegex(ValueError, 'Cannot deserialize data with schema type*'):
+            with self.assertRaisesRegex(TypeError, 'Cannot deserialize data with schema type*'):
                 serializer.deserialize(file, int)

@@ -91,10 +91,10 @@ class SequenceSerializationTests(TestCase):
         self._check_serialized_and_deserialized([A(1), A(2), A(3)], serializer)
         self._check_serialized_and_deserialized((A(1), A(2), A(3)), serializer)
 
-        with self.assertRaisesRegex(ValueError, "Invalid object type*"):
+        with self.assertRaisesRegex(TypeError, "Invalid object type*"):
             self._check_serialized_and_deserialized([], serializer)
 
-        with self.assertRaisesRegex(ValueError, "Invalid object type*"):
+        with self.assertRaisesRegex(TypeError, "Invalid object type*"):
             self._check_serialized_and_deserialized((), serializer)
 
     def _check_serializer_found_by_type(self, typ: Type) -> None:
@@ -114,6 +114,11 @@ class SequenceSerializationTests(TestCase):
         self.assertEqual(SequenceSerializerStable, type(serializer))
         self._check_serialized_and_deserialized(("str", 42), serializer)
 
+    def test_stable_serialization_tuple_various_types_unstable(self):
+        serializer = self.registry.find_serializer_by_type(Tuple[str, List])
+        self.assertEqual(SequenceSerializerUnstable, type(serializer))
+        self._check_serialized_and_deserialized(("str", [1, 2, 3]), serializer)
+
     def test_stable_serialization_tuple_of_untyped_lists(self):
         serializer = self.registry.find_serializer_by_type(Tuple[List, List])
         self.assertEqual(SequenceSerializerUnstable, type(serializer))
@@ -123,3 +128,23 @@ class SequenceSerializationTests(TestCase):
         serializer = self.registry.find_serializer_by_type(Tuple[List[int], List[int]])
         self.assertEqual(SequenceSerializerStable, type(serializer))
         self._check_serialized_and_deserialized(([1], [2]), serializer)
+
+    def test_stable_serialization_tuple_of_variable_length_stable_small(self):
+        serializer = self.registry.find_serializer_by_type(Tuple[int, ...])
+        self.assertEqual(SequenceSerializerStable, type(serializer))
+        self._check_serialized_and_deserialized((1, 2, 3), serializer)
+
+    def test_stable_serialization_tuple_of_variable_length_stable_large(self):
+        serializer = self.registry.find_serializer_by_type(Tuple[int, ...])
+        self.assertEqual(SequenceSerializerStable, type(serializer))
+        self._check_serialized_and_deserialized(tuple(i for i in range(1000)), serializer)
+
+    def test_stable_serialization_tuple_of_variable_length_unstable(self):
+        serializer = self.registry.find_serializer_by_type(Tuple[List, ...])
+        self.assertEqual(SequenceSerializerUnstable, type(serializer))
+        self._check_serialized_and_deserialized(([1], [2], [3]), serializer)
+
+    def test_stable_serialization_tuple_of_variable_length_unstable_large(self):
+        serializer = self.registry.find_serializer_by_type(Tuple[List, ...])
+        self.assertEqual(SequenceSerializerUnstable, type(serializer))
+        self._check_serialized_and_deserialized(tuple([i] for i in range(1000)), serializer)
