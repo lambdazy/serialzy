@@ -1,77 +1,25 @@
-import logging
-import os
-import tempfile
-from abc import ABC
-from typing import BinaryIO, Callable, Dict, Type, Union, Any, Optional
+from typing import BinaryIO, Callable, Type, Union, Any, Optional
 
 from packaging import version  # type: ignore
 
-from serialzy.api import Schema, VersionBoundary
-from serialzy.base import DefaultSchemaSerializerByReference
 from serialzy.errors import SerialzyError
-from serialzy.utils import cached_installed_packages
-
-_LOG = logging.getLogger(__name__)
+from serialzy.serializers.base_model import ModelBaseSerializer, serialize_to_file, deserialize_from_file
 
 
 # noinspection PyPackageRequirements
-class CatboostBaseSerializer(DefaultSchemaSerializerByReference, ABC):
-    def available(self) -> bool:
-        # noinspection PyBroadException
-        try:
-            import catboost  # type: ignore
+class CatboostPoolSerializer(ModelBaseSerializer):
+    def __init__(self):
+        super().__init__("catboost", __name__)
 
-            return True
-        except:
-            return False
-
-    def stable(self) -> bool:
-        return True
-
-    def meta(self) -> Dict[str, str]:
-        import catboost
-
-        return {"catboost": catboost.__version__}
-
-    def resolve(self, schema: Schema) -> Type:
-        typ = super().resolve(schema)
-        if 'catboost' not in schema.meta:
-            _LOG.warning('No catboost version in meta')
-        elif version.parse(schema.meta['catboost']) > version.parse(cached_installed_packages["catboost"]):
-            _LOG.warning(f'Installed version of catboost {cached_installed_packages["catboost"]} '
-                         f'is older than used for serialization {schema.meta["catboost"]}')
-        return typ
-
-    def requirements(self) -> Dict[str, VersionBoundary]:
-        return {'catboost': VersionBoundary()}
-
-
-# noinspection PyPackageRequirements
-class CatboostPoolSerializer(CatboostBaseSerializer):
     def _serialize(self, obj: Any, dest: BinaryIO) -> None:
-        with tempfile.NamedTemporaryFile() as handle:
-            if not obj.is_quantized():  # type: ignore
-                raise SerialzyError('Only quantized pools can be serialized')
-            obj.save(handle.name)  # type: ignore
-            while True:
-                data = handle.read(8096)
-                if not data:
-                    break
-                dest.write(data)
+        if not obj.is_quantized():  # type: ignore
+            raise SerialzyError('Only quantized pools can be serialized')
+        serialize_to_file(dest, lambda x: obj.save(x))
 
     def _deserialize(self, source: BinaryIO, schema_type: Type, user_type: Optional[Type] = None) -> Any:
         self._check_types_valid(schema_type, user_type)
-        with tempfile.NamedTemporaryFile() as handle:
-            while True:
-                data = source.read(8096)
-                if not data:
-                    break
-                handle.write(data)
-            handle.flush()
-            os.fsync(handle.fileno())
-            import catboost
-
-            return catboost.Pool("quantized://" + handle.name)  # type: ignore
+        import catboost
+        return deserialize_from_file(source, lambda x: catboost.Pool("quantized://" + x))
 
     def supported_types(self) -> Union[Type, Callable[[Type], bool]]:
         import catboost
@@ -83,30 +31,17 @@ class CatboostPoolSerializer(CatboostBaseSerializer):
 
 
 # noinspection PyPackageRequirements
-class CatboostModelSerializer(CatboostBaseSerializer):
+class CatboostModelSerializer(ModelBaseSerializer):
+    def __init__(self):
+        super().__init__("catboost", __name__)
+
     def _serialize(self, obj: Any, dest: BinaryIO) -> None:
-        with tempfile.NamedTemporaryFile() as handle:
-            obj.save_model(handle.name, format=self.data_format())  # type: ignore
-            while True:
-                data = handle.read(8096)
-                if not data:
-                    break
-                dest.write(data)
+        serialize_to_file(dest, lambda x: obj.save_model(x, format=self.data_format()))
 
     def _deserialize(self, source: BinaryIO, schema_type: Type, user_type: Optional[Type] = None) -> Any:
         self._check_types_valid(schema_type, user_type)
-        with tempfile.NamedTemporaryFile() as handle:
-            while True:
-                data = source.read(8096)
-                if not data:
-                    break
-                handle.write(data)
-            handle.flush()
-            os.fsync(handle.fileno())
-
-            model = schema_type()
-            model.load_model(handle.name, format=self.data_format())  # type: ignore
-            return model
+        model = schema_type()
+        return deserialize_from_file(source, lambda x: model.load_model(x, format=self.data_format()))
 
     def supported_types(self) -> Union[Type, Callable[[Type], bool]]:
         import catboost as cb
