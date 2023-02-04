@@ -4,13 +4,13 @@ import os
 import shutil
 import tempfile
 from abc import ABC
-from typing import Dict, Type, BinaryIO, Any
+from typing import Dict, Type, BinaryIO, Any, Union, Callable
 
 from packaging import version  # type: ignore
 
 from serialzy.api import Schema, VersionBoundary
 from serialzy.base import DefaultSchemaSerializerByReference
-from serialzy.utils import cached_installed_packages
+from serialzy.utils import cached_installed_packages, module_name
 
 
 # noinspection PyPackageRequirements
@@ -100,3 +100,21 @@ class ModelBaseSerializer(DefaultSchemaSerializerByReference, ABC):
 
     def requirements(self) -> Dict[str, VersionBoundary]:
         return {self.module: VersionBoundary()}
+
+    def supported_types(self) -> Union[Type, Callable[[Type], bool]]:
+        return lambda t: self.__check_module_fits_serializer(t) and self._types_filter(t)
+
+    def _types_filter(self, typ: Type) -> bool:
+        return False
+
+    def __check_module_fits_serializer(self, typ: Type) -> bool:
+        name = module_name(typ)
+        if name == self.module:
+            return True
+
+        if hasattr(typ, '__bases__'):
+            for base in typ.__bases__:
+                base_name = module_name(base)
+                if base_name == self.module:
+                    return True
+        return False

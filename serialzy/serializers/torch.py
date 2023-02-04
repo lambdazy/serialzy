@@ -1,5 +1,5 @@
 import inspect
-from typing import BinaryIO, Callable, Type, Union, Any, Optional
+from typing import BinaryIO, Type, Any, Optional
 
 from packaging import version  # type: ignore
 
@@ -20,9 +20,9 @@ class TorchSerializer(ModelBaseSerializer):
         import torch  # type: ignore
         return deserialize_from_file(source, lambda x: torch.jit.load(x))
 
-    def supported_types(self) -> Union[Type, Callable[[Type], bool]]:
+    def _types_filter(self, typ: Type) -> bool:
         import torch  # type: ignore
-        return lambda t: inspect.isclass(t) and issubclass(t, torch.nn.Module)
+        return inspect.isclass(typ) and issubclass(typ, torch.nn.Module)
 
     def data_format(self) -> str:
         return "pt"

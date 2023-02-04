@@ -1,7 +1,8 @@
 import importlib
+import inspect
 import pkgutil
 from types import ModuleType
-from typing import Dict
+from typing import Dict, Type, Optional
 
 import pkg_resources
 
@@ -20,3 +21,10 @@ cached_installed_packages = all_installed_packages()
 def load_all_modules_from(module: ModuleType) -> None:
     for loader, name, is_pkg in pkgutil.walk_packages(module.__path__):
         importlib.import_module(module.__name__ + '.' + name)
+
+
+def module_name(typ: Type) -> Optional[str]:
+    module = inspect.getmodule(typ)
+    if not module:
+        return None
+    return module.__name__.split(".")[0]

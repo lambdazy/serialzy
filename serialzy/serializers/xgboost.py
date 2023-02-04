@@ -1,4 +1,4 @@
-from typing import BinaryIO, Callable, Type, Union, Any, Optional
+from typing import BinaryIO, Type, Any, Optional
 
 from packaging import version  # type: ignore
 
@@ -24,9 +24,9 @@ class XGBoostSerializer(ModelBaseSerializer):
 
         return deserialize_from_file(source, load_model)
 
-    def supported_types(self) -> Union[Type, Callable[[Type], bool]]:
+    def _types_filter(self, typ) -> bool:
         import xgboost as xgb  # type: ignore
-        return lambda t: t in [xgb.XGBRanker, xgb.XGBRegressor, xgb.XGBClassifier]
+        return typ in [xgb.XGBRanker, xgb.XGBRegressor, xgb.XGBClassifier]
 
     def data_format(self) -> str:
         return "xgb"
