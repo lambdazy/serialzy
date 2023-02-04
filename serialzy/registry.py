@@ -24,6 +24,7 @@ class DefaultSerializerRegistry(SerializerRegistry):
 
         self._serializer_priorities: Dict[Type[Serializer], int] = {}
         self._serializer_registry: Dict[Type[Serializer], Serializer] = {}
+        self._serializer_type_cache: Dict[Type, Serializer] = {}
 
         load_all_modules_from(serialzy.serializers)
         for serializer in self._fetch_serializers_from(serialzy.serializers):
@@ -37,6 +38,7 @@ class DefaultSerializerRegistry(SerializerRegistry):
         self.register_serializer(CloudpickleSerializer(), sys.maxsize - 1)
 
     def register_serializer(self, serializer: Serializer, priority: Optional[int] = None) -> None:
+        self._serializer_type_cache.clear()
         serializer_type = type(serializer)
         if serializer_type in self._serializer_registry:
             raise ValueError(f"Serializer {serializer_type} has been already registered")
@@ -59,6 +61,7 @@ class DefaultSerializerRegistry(SerializerRegistry):
             pass
 
     def unregister_serializer(self, serializer: Serializer):
+        self._serializer_type_cache.clear()
         serializer_type = type(serializer)
         if serializer_type in self._serializer_registry:
             self._data_formats_serializer_registry[serializer.data_format()].remove(serializer)
@@ -77,6 +80,9 @@ class DefaultSerializerRegistry(SerializerRegistry):
         return type(serializer) in self._serializer_registry
 
     def find_serializer_by_type(self, typ: Type) -> Optional[Serializer]:
+        if typ in self._serializer_type_cache:
+            return self._serializer_type_cache[typ]
+
         result: Optional[Serializer] = None
         priority = sys.maxsize
         for serializer_type, serializer in self._serializer_registry.items():
@@ -95,6 +101,9 @@ class DefaultSerializerRegistry(SerializerRegistry):
         for serializer in self._type_registry[typ]:
             if self._serializer_priorities[type(serializer)] <= priority:
                 result = serializer
+
+        if result:
+            self._serializer_type_cache[typ] = result
 
         return result
 
