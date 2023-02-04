@@ -8,7 +8,7 @@ on:
 jobs:
   all-tests:
     runs-on: self-hosted
-    timeout-minutes: 30
+    timeout-minutes: 40
     defaults:
       run:
         shell: bash -l {0}
@@ -20,7 +20,7 @@ jobs:
         uses: actions/checkout@v3
 
       - name: 'python-test'
-        timeout-minutes: 10
+        timeout-minutes: 30
         run: |
           ./scripts/run_tests.sh
          
