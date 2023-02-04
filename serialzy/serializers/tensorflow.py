@@ -1,5 +1,5 @@
 import inspect
-from typing import Union, Type, Callable, Any, BinaryIO, Optional
+from typing import Type, Any, BinaryIO, Optional
 
 from serialzy.serializers.base_model import ModelBaseSerializer, serialize_to_dir, deserialize_from_dir
 
@@ -7,11 +7,7 @@ from serialzy.serializers.base_model import ModelBaseSerializer, serialize_to_di
 # noinspection PyPackageRequirements
 class TensorflowKerasSerializer(ModelBaseSerializer):
     def __init__(self):
-        super().__init__("tensorflow", __name__)
-
-    def supported_types(self) -> Union[Type, Callable[[Type], bool]]:
-        import tensorflow as tf  # type: ignore
-        return lambda t: t in [tf.keras.Sequential] or (inspect.isclass(t) and issubclass(t, tf.keras.Model))
+        super().__init__("keras", __name__)
 
     def data_format(self) -> str:
         return "tf_keras"
@@ -24,15 +20,15 @@ class TensorflowKerasSerializer(ModelBaseSerializer):
         import tensorflow as tf  # type: ignore
         return deserialize_from_dir(source, lambda x: tf.keras.models.load_model(x))
 
+    def _types_filter(self, typ: Type):
+        import tensorflow as tf  # type: ignore
+        return typ in [tf.keras.Sequential] or (inspect.isclass(typ) and issubclass(typ, tf.keras.Model))
+
 
 # noinspection PyPackageRequirements
 class TensorflowPureSerializer(ModelBaseSerializer):
     def __init__(self):
         super().__init__("tensorflow", __name__)
-
-    def supported_types(self) -> Union[Type, Callable[[Type], bool]]:
-        import tensorflow as tf  # type: ignore
-        return lambda t: t in [tf.train.Checkpoint] or (inspect.isclass(t) and issubclass(t, tf.Module))
 
     def data_format(self) -> str:
         return "tf_pure"
@@ -45,3 +41,7 @@ class TensorflowPureSerializer(ModelBaseSerializer):
         self._check_types_valid(schema_type, user_type)
         import tensorflow as tf  # type: ignore
         return deserialize_from_dir(source, lambda x: tf.saved_model.load(x))
+
+    def _types_filter(self, typ: Type):
+        import tensorflow as tf  # type: ignore
+        return typ in [tf.train.Checkpoint] or (inspect.isclass(typ) and issubclass(typ, tf.Module))

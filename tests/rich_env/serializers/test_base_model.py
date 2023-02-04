@@ -21,6 +21,7 @@ class ModelBaseSerializerTests(TestCase):
 
         self.assertTrue(isinstance(serializer, expected_serializer))
         self.assertTrue(serializer.stable())
+        self.assertTrue(serializer.available())
         self.assertIn(self.module, serializer.meta())
         self.assertIn(self.module, serializer.requirements())
         return deserialized_model
@@ -93,8 +94,7 @@ class ModelBaseSerializerTests(TestCase):
                     "module": class_type.__module__,
                     "name": class_type.__name__
                 }), {}))
-            self.assertRegex(cm.output[0], f'WARNING:serialzy.serializers.{self.module}:'
-                                           f'No {self.module} version in meta')
+            self.assertRegex(cm.output[0], f'No {self.module} version in meta')
 
         with self.assertLogs() as cm:
             serializer.resolve(
@@ -102,5 +102,4 @@ class ModelBaseSerializerTests(TestCase):
                     "module": class_type.__module__,
                     "name": class_type.__name__
                 }), {self.module: '1000.0.0'}))
-            self.assertRegex(cm.output[0], f'WARNING:serialzy.serializers.{self.module}:'
-                                           f'Installed version of {self.module}*')
+            self.assertRegex(cm.output[0], f'Installed version of {self.module}*')

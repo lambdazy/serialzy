@@ -43,9 +43,9 @@ class CatboostModelSerializer(ModelBaseSerializer):
         model = schema_type()
         return deserialize_from_file(source, lambda x: model.load_model(x, format=self.data_format()))
 
-    def supported_types(self) -> Union[Type, Callable[[Type], bool]]:
+    def _types_filter(self, typ: Type) -> bool:
         import catboost as cb
-        return lambda t: t in [cb.CatBoostClassifier, cb.CatBoostRegressor, cb.CatBoostRanker]  # type: ignore
+        return typ in [cb.CatBoostClassifier, cb.CatBoostRegressor, cb.CatBoostRanker]  # type: ignore
 
     def data_format(self) -> str:
         return "cbm"  # CatBoost binary format https://catboost.ai/en/docs/concepts/python-reference_catboost_save_model

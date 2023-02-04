@@ -1,4 +1,4 @@
-from typing import BinaryIO, Callable, Type, Union, Any, Optional
+from typing import BinaryIO, Type, Any, Optional
 
 from packaging import version  # type: ignore
 
@@ -18,9 +18,9 @@ class LightGBMSerializer(ModelBaseSerializer):
         import lightgbm  # type: ignore
         return deserialize_from_file(source, lambda x: lightgbm.Booster(model_file=x))
 
-    def supported_types(self) -> Union[Type, Callable[[Type], bool]]:
+    def _types_filter(self, typ: Type) -> bool:
         import lightgbm as lgbm  # type: ignore
-        return lambda t: t in [lgbm.LGBMRanker, lgbm.LGBMRegressor, lgbm.LGBMClassifier]
+        return typ in [lgbm.LGBMRanker, lgbm.LGBMRegressor, lgbm.LGBMClassifier]
 
     def data_format(self) -> str:
         return "lgbm"

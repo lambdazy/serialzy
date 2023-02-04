@@ -14,14 +14,14 @@ class MyModel(tf.keras.Model):
         self.dense1 = tf.keras.layers.Dense(4, activation=tf.nn.relu, input_shape=(32,))
         self.dense2 = tf.keras.layers.Dense(5, activation=tf.nn.softmax)
 
-    def call(self, inputs):
+    def call(self, inputs, **kwargs):
         y = self.dense1(inputs)
         return self.dense2(y)
 
 
 class TensorflowKerasSerializerTests(ModelBaseSerializerTests):
     def setUp(self):
-        self.initialize("tensorflow")
+        self.initialize("keras")
 
     def test_serialization_keras_sequential(self):
         model = tf.keras.Sequential([tf.keras.layers.Dense(5, input_shape=(3,)), tf.keras.layers.Softmax()])
