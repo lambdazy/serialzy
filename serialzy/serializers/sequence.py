@@ -35,9 +35,9 @@ class SequenceSerializerBase(Serializer, ABC):
         for i in range(len(obj)):
             with BytesIO() as handle:
                 if len(serializers) == 1:
-                    cast(Serializer, serializers[0]).serialize(obj[i], handle)
+                    cast(Serializer, serializers[0])._serialize(obj[i], handle)
                 else:
-                    cast(Serializer, serializers[i]).serialize(obj[i], handle)
+                    cast(Serializer, serializers[i])._serialize(obj[i], handle)
                 handle.flush()
 
                 serialized_value = handle.getvalue()
@@ -61,9 +61,9 @@ class SequenceSerializerBase(Serializer, ABC):
                 handle.seek(0)
 
                 if len(serializers) == 1:
-                    obj = cast(Serializer, serializers[0]).deserialize(handle)
+                    obj = cast(Serializer, serializers[0])._deserialize(handle, args[0])
                 else:
-                    obj = cast(Serializer, serializers[i]).deserialize(handle)
+                    obj = cast(Serializer, serializers[i])._deserialize(handle, args[i])
                 result.append(obj)
 
         return get_origin(schema_type)(result)  # type: ignore
