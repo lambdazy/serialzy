@@ -137,12 +137,12 @@ buildNumber.properties
 __pycache__
 
 # pylzy install artifacts
-serialzy/build
-serialzy/dist
-serialzy/*.egg-info
+build/
+dist/
+*.egg-info
 
 #tox
-serialzy/.tox/
+.tox/
 
 #coverage
 *.coverage
