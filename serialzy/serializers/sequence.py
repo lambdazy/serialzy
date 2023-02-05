@@ -50,7 +50,7 @@ class SequenceSerializerBase(Serializer, ABC):
 
         length = int.from_bytes(source.read(8), byteorder='little', signed=False)
         if length == 0:
-            return get_origin(schema_type)([])
+            return get_origin(schema_type)([])  # type: ignore
         # allow list deserialization by both stable and unstable serializers
 
         args = get_args(schema_type)

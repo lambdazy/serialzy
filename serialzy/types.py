@@ -19,8 +19,8 @@ def get_type(obj: Any, type_provider: Optional[Callable[[Any], Type]] = None) ->
         return Tuple[EmptyContent]  # type: ignore
     elif original_type == dict and len(obj) > 0:
         k, v = next(iter(obj.items()))
-        return Dict[get_type(k), get_type(v)]
+        return Dict[get_type(k), get_type(v)]  # type: ignore
     elif original_type == dict and len(obj) == 0:
-        return Dict[EmptyContent, EmptyContent]
+        return Dict[EmptyContent, EmptyContent]  # type: ignore
     else:
         return original_type
