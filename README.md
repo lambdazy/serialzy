@@ -7,19 +7,46 @@
 
 Serialzy is a library for python objects serialization into portable and interoperable data formats (if possible).
 
-### Examples
+### Example
 
-Serialization:
+Suppose you have a catboost model:
+
+```python
+from catboost import CatBoostClassifier
+
+model = CatBoostClassifier()
+model.fit(...)
+```
+
+Firstly you should find a proper serializer for the catboost model type or the corresponding data format:
 
 ```python
 from serialzy.registry import DefaultSerializerRegistry
 
-obj = MyObjToSerialize()
-
 registry = DefaultSerializerRegistry()
-serializer = registry.find_serializer_by_type(type(obj))
-with open('result', 'wb') as file:
-    serializer.serialize(obj, file)
+serializer = registry.find_serializer_by_type(type(model)) # registry.find_serializer_by_data_format("cbm")
+```
+
+Serializers have several properties:
+
+```python
+serializer.available()      # can be used in the current environment
+serializer.requirements()   # libraries needed to be installed to use this serializer
+serializer.stable()         # has portable data format
+```
+
+Serializers can provide data format and schema for a type:
+
+```python
+serializer.data_format()
+serializer.schema(type(model))
+```
+
+Serialization:
+
+```python
+with open('model.cbm', 'wb') as file:
+    serializer.serialize(model, file)
 ```
 
 Deserialization:
@@ -29,16 +56,12 @@ with open('result', 'rb') as file:
     deserialized_obj = serializer.deserialize(file)
 ```
 
-Serializers can be stable (with portable data formats) or unstable, e.g., cloudpickle:
-
-```python
-serializer.stable()
-```
-
 ### List of supported libraries for stable serialization:
 
 | Library                                     | Types                                                                                                                                                                                                                                                                                                                | Data format                                                                                                   | 
 |---------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------|
+| Python std lib                              | int, str, float, bool, None                                                                                                                                                                                                                                                                                          | [string representation](https://github.com/lambdazy/serialzy/blob/main/serialzy/serializers/primitive.py)                                                                                     |
+| Python std lib                              | List, Tuple                                                                                                                                                                                                                                                                                                          | [custom format](https://github.com/lambdazy/serialzy/blob/main/serialzy/serializers/sequence.py)              |
 | [CatBoost](https://catboost.ai)             | [CatBoostRegressor](https://catboost.ai/en/docs/concepts/python-reference_catboostregressor), [CatBoostClassifier](https://catboost.ai/en/docs/concepts/python-reference_catboostclassifier), [CatBoostRanker](https://catboost.ai/en/docs/concepts/python-reference_catboostranker)                                 | [cbm](https://catboost.ai/en/docs/concepts/python-reference_catboost_save_model)                              |
 | [CatBoost](https://catboost.ai)             | [Pool](https://catboost.ai/en/docs/concepts/python-reference_pool)                                                                                                                                                                                                                                                   | [quantized pool](https://catboost.ai/en/docs/concepts/python-reference_pool_save)                             |
 | [Tensorflow.Keras](https://keras.io)        | [Sequential](https://keras.io/guides/sequential_model/), [Model](https://keras.io/api/models/model/) with subclasses                                                                                                                                                                                                 | [tf_keras](https://keras.io/api/models/model_saving_apis/)                                                    |
