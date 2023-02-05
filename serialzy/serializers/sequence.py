@@ -12,7 +12,7 @@ from serialzy.utils import cached_installed_packages
 from typing_extensions import get_args, get_origin
 
 from serialzy.api import Serializer, SerializerRegistry, Schema, VersionBoundary
-from serialzy.types import EmptyListContent, get_type
+from serialzy.types import EmptyContent, get_type
 from serialzy.version import __version__
 
 _LOG = logging.getLogger(__name__)
@@ -49,6 +49,10 @@ class SequenceSerializerBase(Serializer, ABC):
         self._check_types_valid(schema_type, user_type)
 
         length = int.from_bytes(source.read(8), byteorder='little', signed=False)
+        if length == 0:
+            return get_origin(schema_type)([])  # type: ignore
+        # allow list deserialization by both stable and unstable serializers
+
         args = get_args(schema_type)
         serializers = self.__serializers_from_type_args(args)
 
@@ -88,7 +92,7 @@ class SequenceSerializerBase(Serializer, ABC):
         return Schema(self.data_format(), self.SCHEMA_FORMAT, json.dumps(schema_dict), self.meta())
 
     def resolve(self, schema: Schema) -> Type:
-        self._validate_schema(schema)
+        # do not check data format here to allow list deserialization by both stable and unstable serializers
         if schema.schema_format != self.SCHEMA_FORMAT:
             raise ValueError(f'Invalid schema format {schema.schema_format}')
 
@@ -140,7 +144,7 @@ class SequenceSerializerStable(SequenceSerializerBase):
     def __check_arg(self, args: Tuple[Any, ...]) -> bool:
         if len(args) == 0:
             return False
-        elif args[0] == EmptyListContent:
+        elif args[0] == EmptyContent:
             return True
 
         for arg in args:
@@ -163,8 +167,8 @@ class SequenceSerializerUnstable(SequenceSerializerBase):
     def __check_arg(self, args: Tuple[Any, ...]) -> bool:
         if len(args) == 0:
             return False
-        elif args[0] == EmptyListContent:
-            return False
+        elif args[0] == EmptyContent:
+            return True
 
         for arg in args:
             serializer = self._registry.find_serializer_by_type(arg)
