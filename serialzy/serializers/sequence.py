@@ -29,15 +29,14 @@ class SequenceSerializerBase(Serializer, ABC):
         length = len(obj)
         dest.write(length.to_bytes(length=8, byteorder='little', signed=False))
 
-        args = get_args(get_type(obj))
-        serializers = self.__serializers_from_type_args(args)
-
         for i in range(len(obj)):
             with BytesIO() as handle:
-                if len(serializers) == 1:
-                    cast(Serializer, serializers[0])._serialize(obj[i], handle)
-                else:
-                    cast(Serializer, serializers[i])._serialize(obj[i], handle)
+                serializer = cast(Serializer, self._registry.find_serializer_by_type(get_type(obj[i])))
+                data_format = serializer.data_format()
+                handle.write(len(data_format).to_bytes(length=8, byteorder='little', signed=False))
+                handle.write(data_format.encode("utf-8"))
+
+                serializer.serialize(obj[i], handle)
                 handle.flush()
 
                 serialized_value = handle.getvalue()
@@ -53,9 +52,6 @@ class SequenceSerializerBase(Serializer, ABC):
             return get_origin(schema_type)([])  # type: ignore
         # allow list deserialization by both stable and unstable serializers
 
-        args = get_args(schema_type)
-        serializers = self.__serializers_from_type_args(args)
-
         result = list()
         for i in range(length):
             elem_length = int.from_bytes(source.read(8), byteorder='little', signed=False)
@@ -64,10 +60,10 @@ class SequenceSerializerBase(Serializer, ABC):
                 handle.flush()
                 handle.seek(0)
 
-                if len(serializers) == 1:
-                    obj = cast(Serializer, serializers[0])._deserialize(handle, args[0])
-                else:
-                    obj = cast(Serializer, serializers[i])._deserialize(handle, args[i])
+                data_format_length = int.from_bytes(handle.read(8), byteorder='little', signed=False)
+                data_format = handle.read(data_format_length).decode("utf-8")
+                serializer = self._registry.find_serializer_by_data_format(data_format)
+                obj = serializer.deserialize(handle)
                 result.append(obj)
 
         return get_origin(schema_type)(result)  # type: ignore
