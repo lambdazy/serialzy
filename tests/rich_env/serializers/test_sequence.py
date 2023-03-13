@@ -1,6 +1,6 @@
 import sys
 import tempfile
-from typing import List, Tuple, Type, Any
+from typing import List, Tuple, Type, Any, Optional
 from unittest import TestCase
 
 from serialzy.api import Serializer, Schema
@@ -64,6 +64,29 @@ class SequenceSerializationTests(TestCase):
 
             deserialized_stable = serializer.deserialize(file)
             self.assertEqual(empty_list, deserialized_stable)
+
+    def test_complex_list(self):
+        class Object:
+            def __init__(self, x: int):
+                self.__x = x
+
+            def __eq__(self, other: object) -> bool:
+                return isinstance(other, Object) and other.__x == self.__x
+
+        Objects = Tuple[Optional[Object], ...]
+        TaskSingleSolution = Tuple[Objects, Objects]
+        T = List[TaskSingleSolution]
+
+        data = [((None, Object(1)), (Object(2), None)), ((Object(1), None), (None, Object(2)))]
+        serializer = self.registry.find_serializer_by_type(T)
+
+        self._check_serialized_and_deserialized(data, serializer)
+
+    def test_list_optional(self):
+        typ = List[Optional[Tuple[int, str]]]
+        serializer = self.registry.find_serializer_by_type(typ)
+        data = [[1, "str"], None, [2, "str"]]
+        self._check_serialized_and_deserialized(data, serializer)
 
     def test_schema(self):
         typ = List[str]
