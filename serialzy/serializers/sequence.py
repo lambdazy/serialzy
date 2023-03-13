@@ -62,7 +62,7 @@ class SequenceSerializerBase(Serializer, ABC):
 
                 data_format_length = int.from_bytes(handle.read(8), byteorder='little', signed=False)
                 data_format = handle.read(data_format_length).decode("utf-8")
-                serializer = self._registry.find_serializer_by_data_format(data_format)
+                serializer = cast(Serializer, self._registry.find_serializer_by_data_format(data_format))
                 obj = serializer.deserialize(handle)
                 result.append(obj)
 
