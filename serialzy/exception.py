@@ -8,19 +8,19 @@ def register_exception_serializer_to_pickle():
     copyreg.pickle(TracebackType, __pickle_traceback)
 
 
-def __pickle_traceback(tb: TracebackType):
+def __pickle_traceback(tb):
     return to_traceback, (from_traceback(tb),)
 
 
 class Traceback(object):
-    def __init__(self, tb: TracebackType):
+    def __init__(self, tb):
         self.co_name = tb.tb_frame.f_code.co_name
         self.tb_lineno = int(tb.tb_lineno)
         self.co_filename = tb.tb_frame.f_code.co_filename
         self.f_globals = {k: v for k, v in tb.tb_frame.f_globals.items() if k in ("__file__", "__name__")}
 
 
-def from_traceback(tb: TracebackType) -> list[Traceback]:
+def from_traceback(tb):
     stack = []
     while tb:
         stack.append(Traceback(tb))
@@ -28,8 +28,8 @@ def from_traceback(tb: TracebackType) -> list[Traceback]:
     return stack
 
 
-def to_traceback(tbs: list[Traceback]) -> TracebackType:
-    stack = [ValueError]
+def to_traceback(tbs):
+    stack: list[types.FunctionType] = [ValueError]
     for i, tb in enumerate(reversed(tbs)):
         code = compile("\n" * (tb.tb_lineno - 1) + "raise exception()", tb.co_filename, "exec")
         if hasattr(code, "replace"):
@@ -37,7 +37,7 @@ def to_traceback(tbs: list[Traceback]) -> TracebackType:
                                 co_freevars=(), co_cellvars=())
         else:
             code = types.CodeType(
-                0, code.co_argcount, code.co_nlocals, code.co_stacksize, code.co_flags,
+                0, code.co_kwonlyargcount, code.co_nlocals, code.co_stacksize, code.co_flags,
                 code.co_code, code.co_consts, code.co_names, code.co_varnames, tb.co_filename,
                 tb.co_name, code.co_firstlineno, code.co_lnotab, (), (),
             )
