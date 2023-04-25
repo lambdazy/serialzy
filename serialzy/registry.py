@@ -8,7 +8,7 @@ from typing import Dict, List, Optional, Type, cast, Iterable, Any
 import serialzy.serializers
 from serialzy.api import Serializer, SerializerRegistry
 from serialzy.cloudpickle import CloudpickleSerializer
-from serialzy.exception_utils import register_exception_serializer_to_pickle
+from serialzy.exception import register_exception_serializer_to_pickle
 from serialzy.utils import load_all_modules_from
 from serialzy.types import get_type
 
