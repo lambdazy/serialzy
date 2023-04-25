@@ -8,6 +8,7 @@ from typing import Dict, List, Optional, Type, cast, Iterable, Any
 import serialzy.serializers
 from serialzy.api import Serializer, SerializerRegistry
 from serialzy.cloudpickle import CloudpickleSerializer
+from serialzy.exception import register_exception_serializer_to_pickle
 from serialzy.utils import load_all_modules_from
 from serialzy.types import get_type
 
@@ -38,6 +39,7 @@ class DefaultSerializerRegistry(SerializerRegistry):
                 self.register_serializer(serializer, self._default_priority_unstable)
         # cloudpickle has the least priority
         self.register_serializer(CloudpickleSerializer(), sys.maxsize - 1)
+        register_exception_serializer_to_pickle()
 
     def register_serializer(self, serializer: Serializer, priority: Optional[int] = None) -> None:
         self._serializer_type_cache.clear()
