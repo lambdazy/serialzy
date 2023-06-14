@@ -13,7 +13,8 @@ class TensorflowKerasSerializer(ModelBaseSerializer):
         return "tf_keras"
 
     def _serialize(self, obj: Any, dest: BinaryIO) -> None:
-        serialize_to_dir(dest, lambda x: obj.save(x, save_format=self.data_format()))
+        import tensorflow as tf  # type: ignore
+        serialize_to_dir(dest, lambda x: tf.keras.models.save_model(obj, x, save_format='tf'))
 
     def _deserialize(self, source: BinaryIO, schema_type: Type, user_type: Optional[Type] = None) -> Any:
         self._check_types_valid(schema_type, user_type)
