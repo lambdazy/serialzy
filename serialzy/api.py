@@ -148,7 +148,7 @@ class Serializer(abc.ABC):
         if len(first_str) == 0:
             raise ValueError('Source is empty')
         elif first_str != self.HEADER_BYTES:
-            raise ValueError('Missing header in source')
+            raise ValueError(f'Missing header in source, expected {self.HEADER_BYTES}, got {first_str}')
 
         header_len = int.from_bytes(source.read(8), byteorder='little', signed=False)
         schema_json = source.read(header_len).decode('utf-8')

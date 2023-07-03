@@ -19,5 +19,5 @@ class SerializationFailuresTests(TestCase):
         with tempfile.TemporaryFile() as file:
             file.write(b'12345')
             file.seek(0)
-            with self.assertRaisesRegex(ValueError, "Missing header in source*"):
+            with self.assertRaisesRegex(ValueError, "Missing header in source, expected b'serialzy', got b'12345'*"):
                 serializer.deserialize(file)
