@@ -236,7 +236,7 @@ class UnionSerializationTests(TestCase):
             file.flush()
             file.seek(0)
 
-            with self.assertRaisesRegex(ValueError, "Invalid source format*"):
+            with self.assertRaisesRegex(ValueError, "Source is empty*"):
                 serializer.deserialize(file, TestMessage2)
 
         self.registry.register_serializer(to_remove_proto)
