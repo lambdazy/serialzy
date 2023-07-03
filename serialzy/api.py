@@ -145,8 +145,10 @@ class Serializer(abc.ABC):
 
     def _deserialize_type(self, source: BinaryIO) -> Type:
         first_str = source.read(self.HEADER_BYTES_LEN)
-        if first_str != self.HEADER_BYTES:
-            raise ValueError('Invalid source format')
+        if len(first_str) == 0:
+            raise ValueError('Source is empty')
+        elif first_str != self.HEADER_BYTES:
+            raise ValueError('Missing header in source')
 
         header_len = int.from_bytes(source.read(8), byteorder='little', signed=False)
         schema_json = source.read(header_len).decode('utf-8')
