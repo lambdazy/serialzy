@@ -32,11 +32,28 @@ class TorchSerializationTests(ModelBaseSerializerTests):
         deserialized_model = self.base_test(model, TorchSerializer)
         self.assertTrue(np.allclose(model(x).tolist(), deserialized_model(x).tolist()))
 
+    def test_serialization_sequential_with_meta(self):
+        x = torch.tensor(np.random.random(100).astype(np.float32).reshape(1, 1, 10, 10))
+        model = torch.nn.Sequential(
+            torch.nn.Flatten(),
+            torch.nn.Linear(100, 4),
+            torch.nn.Dropout(0.5))
+        model.eval()
+        deserialized_model = self.base_test_with_meta(model, TorchSerializer)
+        self.assertTrue(np.allclose(model(x).tolist(), deserialized_model(x).tolist()))
+
     def test_serialization_custom_model(self):
         x = torch.tensor(np.random.random(100).astype(np.float32).reshape(1, 1, 10, 10))
         model = MyModel()
         model.eval()
         deserialized_model = self.base_test(model, TorchSerializer)
+        self.assertTrue(np.allclose(model(x).tolist(), deserialized_model(x).tolist()))
+
+    def test_serialization_custom_model_with_meta(self):
+        x = torch.tensor(np.random.random(100).astype(np.float32).reshape(1, 1, 10, 10))
+        model = MyModel()
+        model.eval()
+        deserialized_model = self.base_test_with_meta(model, TorchSerializer)
         self.assertTrue(np.allclose(model(x).tolist(), deserialized_model(x).tolist()))
 
     def test_schema(self):
