@@ -18,7 +18,7 @@ class ModelBaseSerializerTests(TestCase):
         self.registry = DefaultSerializerRegistry()
 
     def _assert_model_serializer(self, serializer, expected_serializer):
-        self.assertTrue(isinstance(serializer, expected_serializer))
+        self.assertIsInstance(serializer, expected_serializer)
         self.assertTrue(serializer.stable())
         self.assertTrue(serializer.available())
         self.assertIn(self.module, serializer.meta())
@@ -32,7 +32,7 @@ class ModelBaseSerializerTests(TestCase):
     def base_test_with_meta(self, model: Any, expected_serializer):
         serializer = self.registry.find_serializer_by_type(type(model))
         self._assert_model_serializer(serializer, expected_serializer)
-        assert isinstance(serializer, ModelBaseSerializer)
+        self.assertIsInstance(serializer, ModelBaseSerializer)
         return serialize_and_deserialize_with_meta(serializer, model)
 
     def base_invalid_types(self, model, class_type):

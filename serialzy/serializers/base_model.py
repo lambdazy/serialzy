@@ -1,4 +1,3 @@
-import abc
 import importlib
 import logging
 import os
@@ -134,9 +133,7 @@ class ModelBaseSerializer(DefaultSchemaSerializerByReference, ABC):
         dest_dir_path = Path(dest_dir)
 
         if not dest_dir_path.is_dir():
-            raise NotADirectoryError
-        if not dest_dir_path.exists():
-            raise FileNotFoundError('directory does not exist')
+            raise NotADirectoryError(f"given path {dest_dir_path} is not a dir")
 
         typ = get_type(obj)
         # check that obj type is valid
@@ -144,29 +141,29 @@ class ModelBaseSerializer(DefaultSchemaSerializerByReference, ABC):
 
         # write schema header
         meta_file_path = dest_dir_path / ModelBaseSerializer.META_FILE_NAME
-        with open(meta_file_path, 'wb') as dest:
+        with meta_file_path.open('wb') as dest:
             self._write_schema(typ, dest)
 
         # write serialized model
         model_file_path = dest_dir_path / model_file_name
-        with open(model_file_path, 'wb') as dest:
+        with model_file_path.open('wb') as dest:
             self._serialize(obj, dest)
 
-    def deserialize_with_meta(self, dest_dir: str, model_file_name: str, typ: Optional[Type] = None) -> Any:
+    def deserialize_with_meta(self, source_dir: str, model_file_name: str, typ: Optional[Type] = None) -> Any:
         """
-        :param dest_dir: directory with files with serialized model and meta
+        :param source_dir: directory with files with serialized model and meta
         :param model_file_name: name of file with serialized model
         :param typ: type of the resulting object, fetched from the meta if None
         :return:
         """
-        dest_dir_path = Path(dest_dir)
+        dest_dir_path = Path(source_dir)
 
         # read schema header
         meta_file_path = dest_dir_path / ModelBaseSerializer.META_FILE_NAME
-        with open(meta_file_path, 'rb') as source:
+        with meta_file_path.open('rb') as source:
             schema_type = self._deserialize_type(source)
 
         # read serialized data
         model_file_path = dest_dir_path / model_file_name
-        with open(model_file_path, 'rb') as source:
+        with model_file_path.open('rb') as source:
             return self._deserialize(source, schema_type, typ)
