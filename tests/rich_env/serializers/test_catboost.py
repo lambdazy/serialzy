@@ -23,6 +23,16 @@ class CatboostPoolSerializationTests(ModelBaseSerializerTests):
         deserialized_pool = self.base_test(pool, CatboostPoolSerializer)
         self.assertEqual(pool.get_weight(), deserialized_pool.get_weight())
 
+    def test_serialization_with_meta(self):
+        pool = Pool(
+            data=[[1, 4, 5, 6], [4, 5, 6, 7], [30, 40, 50, 60]],
+            label=[1, 1, -1],
+            weight=[0.1, 0.2, 0.3],
+        )
+        pool.quantize()
+        deserialized_pool = self.base_test_with_meta(pool, CatboostPoolSerializer)
+        self.assertEqual(pool.get_weight(), deserialized_pool.get_weight())
+
     def test_serialization_not_quantized(self):
         pool = Pool(
             data=[[1, 4, 5, 6], [4, 5, 6, 7], [30, 40, 50, 60]],

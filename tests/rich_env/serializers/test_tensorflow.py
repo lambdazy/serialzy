@@ -30,11 +30,18 @@ class TensorflowKerasSerializerTests(ModelBaseSerializerTests):
         x = tf.random.uniform((10, 3))
         self.assertTrue(np.allclose(model.predict(x), deserialized_model.predict(x)))
 
-    def test_serialization_keras_model(self):
+    def test_serialization_keras_sequential_with_meta(self):
+        model = tf.keras.Sequential([tf.keras.layers.Dense(5, input_shape=(3,)), tf.keras.layers.Softmax()])
+        deserialized_model = self.base_test_with_meta(model, TensorflowKerasSerializer)
+
+        x = tf.random.uniform((10, 3))
+        self.assertTrue(np.allclose(model.predict(x), deserialized_model.predict(x)))
+
+    def test_serialization_keras_model_with_meta(self):
         input_x = tf.keras.layers.Input(shape=(32,))
         layer = tf.keras.layers.Dense(32)(input_x)
         model = tf.keras.Model(inputs=input_x, outputs=layer)
-        deserialized_model = self.base_test(model, TensorflowKerasSerializer)
+        deserialized_model = self.base_test_with_meta(model, TensorflowKerasSerializer)
 
         x = tf.random.uniform((10, 32))
         self.assertTrue(np.allclose(model.predict(x), deserialized_model.predict(x)))
@@ -47,6 +54,18 @@ class TensorflowKerasSerializerTests(ModelBaseSerializerTests):
         y = np.random.random((10, 1))
         model.fit(x, y)
         deserialized_model = self.base_test(model, TensorflowKerasSerializer)
+
+        x = tf.random.uniform((10, 32))
+        self.assertTrue(np.allclose(model.predict(x), deserialized_model.predict(x)))
+
+    def test_serialization_custom_keras_model_with_meta(self):
+        model = MyModel()
+        model.compile(loss=tf.keras.losses.MeanSquaredError(),
+                      metrics=[tf.keras.metrics.MeanAbsoluteError()])
+        x = np.random.random((10, 32))
+        y = np.random.random((10, 1))
+        model.fit(x, y)
+        deserialized_model = self.base_test_with_meta(model, TensorflowKerasSerializer)
 
         x = tf.random.uniform((10, 32))
         self.assertTrue(np.allclose(model.predict(x), deserialized_model.predict(x)))
@@ -73,12 +92,30 @@ class TensorflowPureSerializerTests(ModelBaseSerializerTests):
 
         self.assertTrue(np.allclose(model.v, deserialized_model.v))
 
+    def test_serialization_tf_module_with_meta(self):
+        model = tf.Module()
+        model.v = tf.Variable([1.])
+        deserialized_model = self.base_test_with_meta(model, TensorflowPureSerializer)
+
+        self.assertTrue(np.allclose(model.v, deserialized_model.v))
+
     def test_serialization_tf_checkpoint(self):
         model = tf.train.Checkpoint(v=tf.Variable(3.))
         model.f = tf.function(
             lambda x: model.v * x,
             input_signature=[tf.TensorSpec(shape=None, dtype=tf.float32)])
         deserialized_model = self.base_test(model, TensorflowPureSerializer)
+
+        self.assertTrue(np.allclose(model.v, deserialized_model.v))
+        self.assertEqual(model.f(x=tf.constant(2.)).numpy(),
+                         deserialized_model.f(x=tf.constant(2.)).numpy())
+
+    def test_serialization_tf_checkpoint_with_meta(self):
+        model = tf.train.Checkpoint(v=tf.Variable(3.))
+        model.f = tf.function(
+            lambda x: model.v * x,
+            input_signature=[tf.TensorSpec(shape=None, dtype=tf.float32)])
+        deserialized_model = self.base_test_with_meta(model, TensorflowPureSerializer)
 
         self.assertTrue(np.allclose(model.v, deserialized_model.v))
         self.assertEqual(model.f(x=tf.constant(2.)).numpy(),

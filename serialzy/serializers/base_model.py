@@ -4,10 +4,12 @@ import os
 import shutil
 import tempfile
 from abc import ABC
-from typing import Dict, Type, BinaryIO, Any, Union, Callable
+from pathlib import Path
+from typing import Dict, Type, BinaryIO, Any, Union, Callable, Optional
 
 from packaging import version  # type: ignore
 
+from serialzy.types import get_type
 from serialzy.api import Schema, VersionBoundary
 from serialzy.base import DefaultSchemaSerializerByReference
 from serialzy.utils import cached_installed_packages, module_name
@@ -68,6 +70,8 @@ def deserialize_from_dir(source: BinaryIO, read_from_dir) -> Any:
 
 
 class ModelBaseSerializer(DefaultSchemaSerializerByReference, ABC):
+    META_FILE_NAME = 'meta.json'
+
     def __init__(self, module: str, serializer_name: str):
         self.module = module
         self.logger = logging.getLogger(serializer_name)
@@ -118,3 +122,48 @@ class ModelBaseSerializer(DefaultSchemaSerializerByReference, ABC):
                 if base_name == self.module:
                     return True
         return False
+
+    def serialize_with_meta(self, obj: Any, dest_dir: str, model_file_name: str) -> None:
+        """
+        :param obj: object to serialize into bytes
+        :param dest_dir: files with serialized model and meta are written into destination directory
+        :param model_file_name: serialized model's file name
+        :return: None
+        """
+        dest_dir_path = Path(dest_dir)
+
+        if not dest_dir_path.is_dir():
+            raise NotADirectoryError(f"given path {dest_dir_path} is not a dir")
+
+        typ = get_type(obj)
+        # check that obj type is valid
+        self._check_type(typ)
+
+        # write schema header
+        meta_file_path = dest_dir_path / ModelBaseSerializer.META_FILE_NAME
+        with meta_file_path.open('wb') as dest:
+            self._write_schema(typ, dest)
+
+        # write serialized model
+        model_file_path = dest_dir_path / model_file_name
+        with model_file_path.open('wb') as dest:
+            self._serialize(obj, dest)
+
+    def deserialize_with_meta(self, source_dir: str, model_file_name: str, typ: Optional[Type] = None) -> Any:
+        """
+        :param source_dir: directory with files with serialized model and meta
+        :param model_file_name: name of file with serialized model
+        :param typ: type of the resulting object, fetched from the meta if None
+        :return:
+        """
+        dest_dir_path = Path(source_dir)
+
+        # read schema header
+        meta_file_path = dest_dir_path / ModelBaseSerializer.META_FILE_NAME
+        with meta_file_path.open('rb') as source:
+            schema_type = self._deserialize_type(source)
+
+        # read serialized data
+        model_file_path = dest_dir_path / model_file_name
+        with model_file_path.open('rb') as source:
+            return self._deserialize(source, schema_type, typ)

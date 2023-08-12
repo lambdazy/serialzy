@@ -4,10 +4,12 @@ from json import JSONDecodeError
 from typing import Any
 from unittest import TestCase
 
+from serialzy.serializers.base_model import ModelBaseSerializer
+
 from serialzy.api import Schema
 
 from serialzy.registry import DefaultSerializerRegistry
-from tests.rich_env.serializers.utils import serialize_and_deserialize
+from tests.rich_env.serializers.utils import serialize_and_deserialize, serialize_and_deserialize_with_meta
 
 
 class ModelBaseSerializerTests(TestCase):
@@ -15,16 +17,23 @@ class ModelBaseSerializerTests(TestCase):
         self.module = module
         self.registry = DefaultSerializerRegistry()
 
-    def base_test(self, model: Any, expected_serializer):
-        serializer = self.registry.find_serializer_by_type(type(model))
-        deserialized_model = serialize_and_deserialize(serializer, model)
-
-        self.assertTrue(isinstance(serializer, expected_serializer))
+    def _assert_model_serializer(self, serializer, expected_serializer):
+        self.assertIsInstance(serializer, expected_serializer)
         self.assertTrue(serializer.stable())
         self.assertTrue(serializer.available())
         self.assertIn(self.module, serializer.meta())
         self.assertIn(self.module, serializer.requirements())
-        return deserialized_model
+
+    def base_test(self, model: Any, expected_serializer):
+        serializer = self.registry.find_serializer_by_type(type(model))
+        self._assert_model_serializer(serializer, expected_serializer)
+        return serialize_and_deserialize(serializer, model)
+
+    def base_test_with_meta(self, model: Any, expected_serializer):
+        serializer = self.registry.find_serializer_by_type(type(model))
+        self._assert_model_serializer(serializer, expected_serializer)
+        self.assertIsInstance(serializer, ModelBaseSerializer)
+        return serialize_and_deserialize_with_meta(serializer, model)
 
     def base_invalid_types(self, model, class_type):
         serializer = self.registry.find_serializer_by_type(class_type)

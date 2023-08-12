@@ -24,6 +24,18 @@ class LightGBMModelSerializationTests(ModelBaseSerializerTests):
         deserialized_model = self.base_test(model, LightGBMSerializer)
         self.assertTrue(np.allclose(model.predict_proba(x_test), deserialized_model.predict(x_test)))
 
+    def test_serialization_with_meta(self):
+        dataset = datasets.load_wine()
+        x = dataset.data
+        y = dataset.target
+        x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.30)
+
+        model = lightgbm.LGBMClassifier()
+        model.fit(x_train, y_train)
+
+        deserialized_model = self.base_test_with_meta(model, LightGBMSerializer)
+        self.assertTrue(np.allclose(model.predict_proba(x_test), deserialized_model.predict(x_test)))
+
     def test_schema(self):
         self.base_schema('lgbm', lightgbm.LGBMRanker)
 
