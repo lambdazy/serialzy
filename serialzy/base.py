@@ -19,7 +19,7 @@ class DefaultSchemaSerializerByValue(Serializer, ABC):
         try:
             import cloudpickle  # type: ignore
             return True
-        except:
+        except Exception:
             return False
 
     def schema(self, typ: Type) -> Schema:

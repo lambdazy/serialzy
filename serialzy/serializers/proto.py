@@ -36,7 +36,7 @@ class ProtoMessageSerializer(DefaultSchemaSerializerByValue):
         try:
             import pure_protobuf  # type: ignore
             return True
-        except:
+        except Exception:
             return False
 
     def stable(self) -> bool:

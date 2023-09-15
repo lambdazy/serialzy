@@ -41,16 +41,19 @@ class UnionSerializerBase(Serializer, ABC):
         else:
             args = get_args(user_type)
             # Optional case
-            if len(args) == 2 and args[1] == type(None):
-                if schema_type == type(None):
-                    return cast(Serializer, self._registry.find_serializer_by_type(schema_type))._deserialize(source,
-                                                                                                              schema_type)
+            if len(args) == 2 and args[1] == type(None):  # noqa
+                if schema_type == type(None):  # noqa
+                    return cast(
+                        Serializer,
+                        self._registry.find_serializer_by_type(schema_type)
+                    )._deserialize(source, schema_type)
                 else:
                     try:
-                        return cast(Serializer, self._registry.find_serializer_by_type(args[0]))._deserialize(source,
-                                                                                                              schema_type,
-                                                                                                              args[0])
-                    except:
+                        return cast(
+                            Serializer,
+                            self._registry.find_serializer_by_type(args[0])
+                        )._deserialize(source, schema_type, args[0])
+                    except Exception:
                         raise ValueError(f'Cannot deserialize data into type {user_type}')
             # General union case
             else:
@@ -72,7 +75,7 @@ class UnionSerializerBase(Serializer, ABC):
                             serializer_by_type = cast(Serializer, self._registry.find_serializer_by_type(arg))
                             obj = serializer_by_type._deserialize(cast(BinaryIO, handle), schema_type, arg)
                             return obj
-                        except:
+                        except Exception:
                             handle.seek(0)
                             continue
 

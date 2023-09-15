@@ -10,15 +10,18 @@ def generate_serializer(
         available: bool = True,
         stable: bool = True,
 ) -> Type[Serializer]:
+    class MockType:
+        pass
+
     class TestSerializer(Serializer):
         def requirements(self) -> Dict[str, VersionBoundary]:
             return {}
 
         def schema(self, typ: Type) -> Schema:
-            pass
+            return Schema('', '', '')
 
         def resolve(self, schema: Schema) -> Type:
-            pass
+            return MockType
 
         def data_format(self) -> str:
             return "test_format"

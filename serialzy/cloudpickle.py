@@ -29,7 +29,7 @@ class CloudpickleSerializer(DefaultSchemaSerializerByValue):
         try:
             import cloudpickle  # type: ignore
             return True
-        except:
+        except Exception:
             return False
 
     def stable(self) -> bool:

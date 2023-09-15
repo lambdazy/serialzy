@@ -19,7 +19,7 @@ class PrimitiveSerializer(DefaultSchemaSerializerByReference):
     def _deserialize(self, source: BinaryIO, schema_type: Type, user_type: Optional[Type] = None) -> Any:
         self._check_types_valid(schema_type, user_type)
         read = source.read().decode("utf-8")
-        if schema_type == type(None):
+        if schema_type == type(None):  # noqa
             return None
         elif schema_type == bool:
             return read == "True"

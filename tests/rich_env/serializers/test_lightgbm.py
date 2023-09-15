@@ -51,4 +51,3 @@ class LightGBMModelSerializationTests(ModelBaseSerializerTests):
         model = lightgbm.LGBMClassifier()
         model.fit(x_train, y_train)
         self.base_invalid_types(model, lightgbm.LGBMRegressor)
-
