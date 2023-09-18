@@ -31,7 +31,10 @@ def pytest_collection_modifyitems(config, items):
     for item in items[:]:
         path = Path(item.fspath).relative_to(serialzy_location)
 
-        empty_tests = path.is_relative_to('tests/empty_env')
+        if sys.version_info >= (3, 9):
+            empty_tests = path.is_relative_to('tests/empty_env')
+        else:
+            empty_tests = str(path).startswith('tests/empty_env/')
 
         if empty_tests != empty_venv_tests:
             items.remove(item)
