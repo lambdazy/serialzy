@@ -7,33 +7,34 @@ on:
 
 jobs:
   all-tests:
-    runs-on: self-hosted
-    timeout-minutes: 90
-    defaults:
-      run:
-        shell: bash -l {0}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [ '3.7', '3.8', '3.9', '3.10' ]
+    timeout-minutes: 30
     steps:
-      - name: "сhown for checkout"
-        run: sudo chown -R $USER:$USER /home/ubuntu/actions-runner/_work/lzy/
-
-      - name: "checkout"
+      - name: "Checkout"
         uses: actions/checkout@v3
 
-      - name: 'python-test'
-        timeout-minutes: 80
+      - name: "Set up Python ${{ matrix.python-version }}"
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: "Set up test environment"
         run: |
-          ./scripts/run_tests.sh
-         
-      - name: 'upload coverage badge'
+            sudo apt-get install libgomp1
+            pip install tox tox-gh-actions
+
+      - name: "Tests"
+        run: tox -- -vv
+
+      - name: 'Upload coverage badge'
         uses: exuanbo/actions-deploy-gist@v1
-        if: github.ref == 'refs/heads/main'
+        if: github.ref == 'refs/heads/main' && matrix.python-version == '3.9'
         with:
           token: ${{ secrets.GIST_SECRET }}
           gist_id: 74a3e00f914bb55c0f3582a7d48e3bcd
           file_path: coverage.svg
           file_type: binary
           gist_file_name: ${{ (github.head_ref || github.ref_name) }}-coverage.svg
-      
-      - name: 'clean after python-test'
-        run: |
-          ./scripts/clean.sh
