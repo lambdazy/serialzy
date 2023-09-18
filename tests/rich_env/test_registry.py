@@ -67,18 +67,23 @@ class SerializationRegistryTests(TestCase):
         serializer = generate_serializer(available=False, supported_types=A)()
         self.registry.register_serializer(serializer)
         by_type = self.registry.find_serializer_by_type(A)
+        assert by_type
         self.assertEqual(by_type, serializer)
         self.assertFalse(by_type.available())
 
     def test_register_stable_serializer(self):
         serializer = generate_serializer(available=True, stable=True, supported_types=A)()
         self.registry.register_serializer(serializer)
-        self.assertEqual(self.registry.find_serializer_by_type(A).stable(), serializer.stable())
+        by_type = self.registry.find_serializer_by_type(A)
+        assert by_type
+        self.assertEqual(by_type.stable(), serializer.stable())
 
     def test_register_unstable_serializer(self):
         serializer = generate_serializer(available=True, stable=False, supported_types=A)()
         self.registry.register_serializer(serializer)
-        self.assertEqual(self.registry.find_serializer_by_type(A).stable(), serializer.stable())
+        by_type = self.registry.find_serializer_by_type(A)
+        assert by_type
+        self.assertEqual(by_type.stable(), serializer.stable())
 
     def test_serializer_for_type_prioritized(self):
         serializer_for_type = generate_serializer(available=True, supported_types=A)()

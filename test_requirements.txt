@@ -5,4 +5,5 @@ types-PyJWT
 types-PyYAML
 types-requests
 types-setuptools
-types-tensorflow
+# TODO: uncomment after upgrading tensorflow to at least 2.10
+# types-tensorflow

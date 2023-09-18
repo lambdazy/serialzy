@@ -34,6 +34,7 @@ class SequenceSerializationTests(TestCase):
         self._check_serializer_found_by_instance((1, 2, 3))
 
         serializer = self.registry.find_serializer_by_type(type([1, 2, 3]))
+        assert serializer
         # in this case cloudpickle is used
         self.assertNotEqual(SequenceSerializerStable, type(serializer))
 
@@ -42,8 +43,9 @@ class SequenceSerializationTests(TestCase):
         self.assertNotEqual(SequenceSerializerStable, type(serializer))
 
     def test_empty_list(self):
-        empty_list = []
+        empty_list: List[Any] = []
         serializer = self.registry.find_serializer_by_type(get_type(empty_list))
+        assert serializer
         self.assertEqual(SequenceSerializerStable, type(serializer))
 
         with tempfile.TemporaryFile() as file:
@@ -79,12 +81,14 @@ class SequenceSerializationTests(TestCase):
 
         data = [((None, Object(1)), (Object(2), None)), ((Object(1), None), (None, Object(2)))]
         serializer = self.registry.find_serializer_by_type(T)
+        assert serializer
 
         self._check_serialized_and_deserialized(data, serializer)
 
     def test_list_optional(self):
         typ = List[Optional[Tuple[int, str]]]
         serializer = self.registry.find_serializer_by_type(typ)
+        assert serializer
         data = [[1, "str"], None, [2, "str"]]
         self._check_serialized_and_deserialized(data, serializer)
 
@@ -92,6 +96,7 @@ class SequenceSerializationTests(TestCase):
         typ = List[str]
 
         serializer = self.registry.find_serializer_by_type(typ)
+        assert serializer
         self.assertTrue(serializer.available())
         self.assertTrue(len(serializer.requirements()) == 0)
 
@@ -126,6 +131,7 @@ class SequenceSerializationTests(TestCase):
 
     def test_stable_serialization(self):
         serializer = self.registry.find_serializer_by_data_format("serialzy_sequence_stable")
+        assert serializer
         self.assertEqual(SequenceSerializerStable, type(serializer))
 
         self._check_serialized_and_deserialized([1, 2, 3], serializer)
@@ -141,6 +147,7 @@ class SequenceSerializationTests(TestCase):
 
     def test_unstable_serialization(self):
         serializer = self.registry.find_serializer_by_data_format("serialzy_sequence_unstable")
+        assert serializer
         self.assertEqual(SequenceSerializerUnstable, type(serializer))
 
         self._check_serialized_and_deserialized([A(1), A(2), A(3)], serializer)
@@ -152,12 +159,14 @@ class SequenceSerializationTests(TestCase):
         self._check_serialized_and_deserialized([1, 2, 3], serializer)
         self._check_serialized_and_deserialized((1, 2, 3), serializer)
 
-    def _check_serializer_found_by_type(self, typ: Type) -> None:
+    def _check_serializer_found_by_type(self, typ: object) -> None:  # TODO: FIX object
         serializer = self.registry.find_serializer_by_type(typ)
+        assert serializer
         self.assertEqual(SequenceSerializerStable, type(serializer))
 
     def _check_serializer_found_by_instance(self, obj: Any) -> None:
         serializer = self.registry.find_serializer_by_instance(obj)
+        assert serializer
         self.assertEqual(SequenceSerializerStable, type(serializer))
 
     def _check_serialized_and_deserialized(self, obj: Any, serializer: Serializer) -> None:
@@ -166,44 +175,52 @@ class SequenceSerializationTests(TestCase):
 
     def test_stable_serialization_tuple_various_types(self):
         serializer = self.registry.find_serializer_by_type(Tuple[str, int])
+        assert serializer
         self.assertEqual(SequenceSerializerStable, type(serializer))
         self._check_serialized_and_deserialized(("str", 42), serializer)
 
     def test_serialization_tuple_various_types_unstable(self):
         serializer = self.registry.find_serializer_by_type(Tuple[str, List])
+        assert serializer
         self.assertEqual(SequenceSerializerUnstable, type(serializer))
         self._check_serialized_and_deserialized(("str", [A(1), A(2), A(3)]), serializer)
         self._check_serialized_and_deserialized(("str", [1, 2, 3]), serializer)
 
     def test_unstable_serialization_tuple_of_untyped_lists(self):
         serializer = self.registry.find_serializer_by_type(Tuple[List, List])
+        assert serializer
         self.assertEqual(SequenceSerializerUnstable, type(serializer))
         self._check_serialized_and_deserialized(([A(1)], [A(2)]), serializer)
         self._check_serialized_and_deserialized(([1], [2]), serializer)
 
     def test_stable_serialization_tuple_of_typed_lists(self):
         serializer = self.registry.find_serializer_by_type(Tuple[List[int], List[int]])
+        assert serializer
         self.assertEqual(SequenceSerializerStable, type(serializer))
         self._check_serialized_and_deserialized(([1], [2]), serializer)
 
     def test_stable_serialization_tuple_of_variable_length_stable_small(self):
         serializer = self.registry.find_serializer_by_type(Tuple[int, ...])
+        assert serializer
         self.assertEqual(SequenceSerializerStable, type(serializer))
         self._check_serialized_and_deserialized((1, 2, 3), serializer)
 
     def test_stable_serialization_tuple_of_variable_length_stable_large(self):
         serializer = self.registry.find_serializer_by_type(Tuple[int, ...])
+        assert serializer
         self.assertEqual(SequenceSerializerStable, type(serializer))
         self._check_serialized_and_deserialized(tuple(i for i in range(1000)), serializer)
 
     def test_stable_serialization_tuple_of_variable_length_unstable(self):
         serializer = self.registry.find_serializer_by_type(Tuple[List, ...])
+        assert serializer
         self.assertEqual(SequenceSerializerUnstable, type(serializer))
         self._check_serialized_and_deserialized(([A(1)], [A(2)]), serializer)
         self._check_serialized_and_deserialized(([1], [2], [3]), serializer)
 
     def test_stable_serialization_tuple_of_variable_length_unstable_large(self):
         serializer = self.registry.find_serializer_by_type(Tuple[List, ...])
+        assert serializer
         self.assertEqual(SequenceSerializerUnstable, type(serializer))
         self._check_serialized_and_deserialized(tuple(A(i) for i in range(1000)), serializer)
         self._check_serialized_and_deserialized(tuple([i] for i in range(1000)), serializer)

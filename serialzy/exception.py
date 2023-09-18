@@ -2,6 +2,7 @@ import copyreg
 import sys
 import types
 from types import TracebackType
+from typing import Callable, List
 
 
 def register_exception_serializer_to_pickle():
@@ -12,7 +13,7 @@ def __pickle_traceback(tb):
     return to_traceback, (from_traceback(tb),)
 
 
-class Traceback(object):
+class Traceback:
     def __init__(self, tb):
         self.co_name = tb.tb_frame.f_code.co_name
         self.tb_lineno = int(tb.tb_lineno)
@@ -29,22 +30,40 @@ def from_traceback(tb):
 
 
 def to_traceback(tbs):
-    stack: list[types.FunctionType] = [ValueError]
+    stack: List[Callable] = [ValueError]
     for i, tb in enumerate(reversed(tbs)):
         code = compile("\n" * (tb.tb_lineno - 1) + "raise exception()", tb.co_filename, "exec")
         if hasattr(code, "replace"):
             code = code.replace(co_argcount=0, co_filename=tb.co_filename, co_name=tb.co_name,
                                 co_freevars=(), co_cellvars=())
-        else:
-            code = types.CodeType(
-                0, code.co_kwonlyargcount, code.co_nlocals, code.co_stacksize, code.co_flags,
-                code.co_code, code.co_consts, code.co_names, code.co_varnames, tb.co_filename,
-                tb.co_name, code.co_firstlineno, code.co_lnotab, (), (),
+        elif sys.version_info < (3, 8):
+            code = CodeType(
+                co_argcount=0,
+                co_kwonlyargcount=code.co_kwonlyargcount,
+                co_nlocals=code.co_nlocals,
+                co_stacksize=code.co_stacksize,
+                co_coflags=code.co_flags,
+                co_code=code.co_code,
+                co_consts=code.co_consts,
+                co_co_names=code.co_names,
+                co_varnames=code.co_varnames,
+                co_filename=tb.co_filename,
+                co_coname=tb.co_name,
+                co_firstlineno=code.co_firstlineno,
+                co_lnotab=code.co_lnotab,
+                co_freevars=(),
+                co_cellvars=(),
             )
+        else:
+            assert False
+
         tb.f_globals["exception"] = stack[i]
         func = types.FunctionType(code, tb.f_globals, tb.co_name)
         stack.append(func)
+
     try:
         stack[-1]()
     except ValueError:
-        return sys.exc_info()[2].tb_next
+        tb = sys.exc_info()[2]
+        assert tb
+        return tb.tb_next

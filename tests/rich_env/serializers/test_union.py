@@ -19,12 +19,14 @@ class UnionSerializationTests(TestCase):
         typ = Optional[str]
         obj = "str"
         serializer = self.registry.find_serializer_by_type(typ)
+        assert serializer
 
         deserialized = serialize_and_deserialize(serializer, obj)
         self.assertEqual(obj, deserialized)
 
         # serialize by primitive and deserialize by union
         primitive_serializer = self.registry.find_serializer_by_type(type(obj))
+        assert primitive_serializer
         with tempfile.TemporaryFile() as file:
             primitive_serializer.serialize(obj, file)
             file.flush()
@@ -40,7 +42,8 @@ class UnionSerializationTests(TestCase):
     def test_optional_schema(self):
         typ = Optional[str]
         serializer = self.registry.find_serializer_by_type(typ)
-        schema = serializer.schema(typ)
+        assert serializer
+        schema = serializer.schema(typ)  # type: ignore  # TODO FIX
 
         self.assertEqual("serialzy_union_schema", schema.schema_format)
         self.assertEqual("serialzy_union_stable", schema.data_format)
@@ -49,8 +52,9 @@ class UnionSerializationTests(TestCase):
     def test_optional_resolve(self):
         typ = Optional[str]
         serializer = self.registry.find_serializer_by_type(typ)
+        assert serializer
 
-        schema = serializer.schema(typ)
+        schema = serializer.schema(typ)  # type: ignore  # TODO FIX
         resolved = serializer.resolve(schema)
         self.assertEqual(typ, resolved)
 
@@ -91,21 +95,24 @@ class UnionSerializationTests(TestCase):
 
         typ = Union[str, B]
         serializer = self.registry.find_serializer_by_type(typ)
+        assert serializer
         self.assertEqual("serialzy_union_unstable", serializer.data_format())
         self.assertTrue("serialzy" in serializer.meta())
         self.assertFalse(serializer.stable())
 
-        typ = Union[str, int, type(None)]
-        serializer = self.registry.find_serializer_by_type(typ)
+        typ2 = Optional[Union[str, int]]
+        serializer = self.registry.find_serializer_by_type(typ2)
+        assert serializer
         self.assertEqual("serialzy_union_stable", serializer.data_format())
         self.assertTrue("serialzy" in serializer.meta())
         self.assertTrue(serializer.stable())
 
-        typ = Union[str, B]
+        typ3 = Union[str, B]
         to_remove = self.registry.find_serializer_by_type(B)
+        assert to_remove
         self.registry.unregister_serializer(to_remove)
 
-        serializer = self.registry.find_serializer_by_type(typ)
+        serializer = self.registry.find_serializer_by_type(typ3)
         self.assertIsNone(serializer)
 
     def test_deserialize_in_union_with_type(self):
@@ -117,11 +124,12 @@ class UnionSerializationTests(TestCase):
         obj = B(42)
 
         serializer = self.registry.find_serializer_by_type(typ)
+        assert serializer
         with tempfile.TemporaryFile() as file:
             serializer.serialize(obj, file)
             file.flush()
             file.seek(0)
-            deserialized = serializer.deserialize(file, typ)
+            deserialized = serializer.deserialize(file, typ)  # type: ignore  # TODO FIX
 
         self.assertEqual(obj.x, deserialized.x)
 
@@ -138,25 +146,27 @@ class UnionSerializationTests(TestCase):
         obj = B(42)
 
         serializer = self.registry.find_serializer_by_type(typ)
+        assert serializer
         with tempfile.TemporaryFile() as file:
             serializer.serialize(obj, file)
             file.flush()
             file.seek(0)
 
             with self.assertRaisesRegex(ValueError, "Cannot deserialize data into type*"):
-                serializer.deserialize(file, Union[int, A])
+                serializer.deserialize(file, Union[int, A])  # type: ignore  # TODO FIX
 
-        typ = Optional[B]
+        typ2 = Optional[B]
         obj = B(42)
 
-        serializer = self.registry.find_serializer_by_type(typ)
+        serializer = self.registry.find_serializer_by_type(typ2)
+        assert serializer
         with tempfile.TemporaryFile() as file:
             serializer.serialize(obj, file)
             file.flush()
             file.seek(0)
 
             with self.assertRaisesRegex(ValueError, "Cannot deserialize data into type*"):
-                serializer.deserialize(file, Optional[A])
+                serializer.deserialize(file, Optional[A])  # type: ignore  # TODO FIX
 
     def test_deserialize_in_optional_with_type(self):
         class B:
@@ -167,17 +177,18 @@ class UnionSerializationTests(TestCase):
         obj = B(42)
 
         serializer = self.registry.find_serializer_by_type(typ)
+        assert serializer
         with tempfile.TemporaryFile() as file:
             serializer.serialize(None, file)
             file.flush()
             file.seek(0)
-            deserialized_none = serializer.deserialize(file, typ)
+            deserialized_none = serializer.deserialize(file, typ)  # type: ignore  # TODO FIX
 
         with tempfile.TemporaryFile() as file:
             serializer.serialize(obj, file)
             file.flush()
             file.seek(0)
-            deserialized_obj = serializer.deserialize(file, typ)
+            deserialized_obj = serializer.deserialize(file, typ)  # type: ignore  # TODO FIX
 
         self.assertEqual(obj.x, deserialized_obj.x)
         self.assertEqual(None, deserialized_none)
@@ -196,6 +207,7 @@ class UnionSerializationTests(TestCase):
 
         typ = Optional[TestMessage]
         serializer = self.registry.find_serializer_by_type(typ)
+        assert serializer
         # noinspection DuplicatedCode
         with tempfile.TemporaryFile() as file:
             obj = TestMessage(5)
@@ -213,7 +225,7 @@ class UnionSerializationTests(TestCase):
             serializer.serialize(obj, file)
             file.flush()
             file.seek(0)
-            deserialized = serializer.deserialize(file, Optional[TestMessage2])
+            deserialized = serializer.deserialize(file, Optional[TestMessage2])  # type: ignore  # TODO FIX
 
         self.assertTrue(isinstance(obj, TestMessage))
         self.assertTrue(isinstance(deserialized, TestMessage2))
@@ -223,9 +235,11 @@ class UnionSerializationTests(TestCase):
 
         # removing proto serializer
         to_remove_proto = self.registry.find_serializer_by_type(TestMessage)
+        assert to_remove_proto
         self.registry.unregister_serializer(to_remove_proto)
         # removing cloudpickle serializer
         to_remove_pickle = self.registry.find_serializer_by_type(TestMessage)
+        assert to_remove_pickle
         self.registry.unregister_serializer(to_remove_pickle)
 
         with tempfile.TemporaryFile() as file:
