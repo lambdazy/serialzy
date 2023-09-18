@@ -1,7 +1,6 @@
 import copyreg
 import sys
-import types
-from types import TracebackType, CodeType
+from types import TracebackType, CodeType, FunctionType
 from typing import Callable, List
 
 
@@ -58,7 +57,7 @@ def to_traceback(tbs):
             assert False
 
         tb.f_globals["exception"] = stack[i]
-        func = types.FunctionType(code, tb.f_globals, tb.co_name)
+        func = FunctionType(code, tb.f_globals, tb.co_name)
         stack.append(func)
 
     try:

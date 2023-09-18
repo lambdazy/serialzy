@@ -4,7 +4,7 @@ import json
 import logging
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, BinaryIO, Callable, Dict, Optional, Type, Union, overload
+from typing import Any, BinaryIO, Callable, Dict, Optional, Type, Union
 
 from packaging import version  # type: ignore
 
