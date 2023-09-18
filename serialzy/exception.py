@@ -1,7 +1,7 @@
 import copyreg
 import sys
 import types
-from types import TracebackType
+from types import TracebackType, CodeType
 from typing import Callable, List
 
 
