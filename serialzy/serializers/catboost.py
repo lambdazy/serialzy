@@ -1,7 +1,5 @@
 from typing import BinaryIO, Callable, Type, Union, Any, Optional
 
-from packaging import version  # type: ignore
-
 from serialzy.errors import SerialzyError
 from serialzy.serializers.base_model import ModelBaseSerializer, serialize_to_file, deserialize_from_file
 

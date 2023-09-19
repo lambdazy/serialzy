@@ -3,7 +3,7 @@ import logging
 import sys
 from collections import defaultdict
 from types import ModuleType
-from typing import Dict, List, Optional, Type, cast, Iterable, Any, Union, overload
+from typing import Dict, List, Optional, Type, cast, Iterable, Any, overload
 
 import serialzy.serializers
 from serialzy.api import Serializer, SerializerRegistry

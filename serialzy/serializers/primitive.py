@@ -1,8 +1,6 @@
 import logging
 from typing import Any, BinaryIO, Callable, Dict, Type, Union, Optional
 
-from packaging import version  # type: ignore
-
 from serialzy.api import StandardDataFormats, VersionBoundary
 from serialzy.base import DefaultSchemaSerializerByReference
 from serialzy.version import __version__

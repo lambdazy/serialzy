@@ -34,7 +34,7 @@ class ProtoMessageSerializer(DefaultSchemaSerializerByValue):
 
         # noinspection PyBroadException
         try:
-            import pure_protobuf  # type: ignore
+            import pure_protobuf  # type: ignore  # noqa
             return True
         except Exception:
             return False

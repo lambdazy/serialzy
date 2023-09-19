@@ -6,8 +6,6 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, BinaryIO, Callable, Dict, Optional, Type, Union
 
-from packaging import version  # type: ignore
-
 from serialzy.types import get_type
 
 _LOG = logging.getLogger(__name__)

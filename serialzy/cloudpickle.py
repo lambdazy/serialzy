@@ -27,7 +27,7 @@ class CloudpickleSerializer(DefaultSchemaSerializerByValue):
             return False
         # noinspection PyBroadException
         try:
-            import cloudpickle  # type: ignore
+            import cloudpickle  # type: ignore  # noqa
             return True
         except Exception:
             return False

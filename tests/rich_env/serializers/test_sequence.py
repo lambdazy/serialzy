@@ -1,6 +1,6 @@
 import sys
 import tempfile
-from typing import List, Tuple, Type, Any, Optional
+from typing import List, Tuple, Any, Optional
 from unittest import TestCase
 
 from serialzy.api import Serializer, Schema
