@@ -7,7 +7,7 @@ exclude = [
 ]
 [tool.black]
 line-length = 88
-target-version = ['py37', 'py38', 'py39', '3.10']
+target-version = ['py37', 'py38', 'py39', '3.10', '3.11']
 include = '\.pyi?$'
 [tool.mypy]
 [build-system]
