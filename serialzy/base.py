@@ -17,9 +17,9 @@ class DefaultSchemaSerializerByValue(Serializer, ABC):
     def available(self) -> bool:
         # noinspection PyBroadException
         try:
-            import cloudpickle  # type: ignore
+            import cloudpickle  # type: ignore  # noqa
             return True
-        except:
+        except Exception:
             return False
 
     def schema(self, typ: Type) -> Schema:

@@ -14,27 +14,29 @@ class PrimitiveSerializationTests(TestCase):
 
     def test_serialization(self):
         serializer = self.registry.find_serializer_by_data_format(StandardDataFormats.primitive_type.name)
+        assert serializer
 
-        var = 10
-        self.assertEqual(var, serialize_and_deserialize(serializer, var))
+        var1 = 10
+        self.assertEqual(var1, serialize_and_deserialize(serializer, var1))
 
-        var = 0.0001
-        self.assertEqual(var, serialize_and_deserialize(serializer, var))
+        var2 = 0.0001
+        self.assertEqual(var2, serialize_and_deserialize(serializer, var2))
 
-        var = "str"
-        self.assertEqual(var, serialize_and_deserialize(serializer, var))
+        var3 = "str"
+        self.assertEqual(var3, serialize_and_deserialize(serializer, var3))
 
-        var = True
-        self.assertEqual(var, serialize_and_deserialize(serializer, var))
+        var4 = True
+        self.assertEqual(var4, serialize_and_deserialize(serializer, var4))
 
-        var = False
-        self.assertEqual(var, serialize_and_deserialize(serializer, var))
+        var5 = False
+        self.assertEqual(var5, serialize_and_deserialize(serializer, var5))
 
-        var = None
-        self.assertEqual(var, serialize_and_deserialize(serializer, var))
+        var6 = None
+        self.assertEqual(var6, serialize_and_deserialize(serializer, var6))
 
     def test_schema(self):
         serializer = self.registry.find_serializer_by_data_format(StandardDataFormats.primitive_type.name)
+        assert serializer
         self.assertTrue(serializer.stable())
         self.assertTrue(serializer.available())
         self.assertTrue('serialzy' in serializer.meta())
@@ -51,6 +53,7 @@ class PrimitiveSerializationTests(TestCase):
 
     def test_resolve(self):
         serializer = self.registry.find_serializer_by_data_format(StandardDataFormats.primitive_type.name)
+        assert serializer
         typ = serializer.resolve(Schema(
             StandardDataFormats.primitive_type.name, 'serialzy_python_type_reference',
             '{"module": "builtins", "name": "str"}'
@@ -91,6 +94,7 @@ class PrimitiveSerializationTests(TestCase):
 
     def test_invalid_types(self):
         serializer = self.registry.find_serializer_by_type(int)
+        assert serializer
 
         with self.assertRaisesRegex(TypeError, 'Invalid object type*'):
             with tempfile.TemporaryFile() as file:

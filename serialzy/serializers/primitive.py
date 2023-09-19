@@ -1,8 +1,6 @@
 import logging
 from typing import Any, BinaryIO, Callable, Dict, Type, Union, Optional
 
-from packaging import version  # type: ignore
-
 from serialzy.api import StandardDataFormats, VersionBoundary
 from serialzy.base import DefaultSchemaSerializerByReference
 from serialzy.version import __version__
@@ -19,7 +17,7 @@ class PrimitiveSerializer(DefaultSchemaSerializerByReference):
     def _deserialize(self, source: BinaryIO, schema_type: Type, user_type: Optional[Type] = None) -> Any:
         self._check_types_valid(schema_type, user_type)
         read = source.read().decode("utf-8")
-        if schema_type == type(None):
+        if schema_type == type(None):  # noqa
             return None
         elif schema_type == bool:
             return read == "True"

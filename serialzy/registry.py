@@ -3,7 +3,7 @@ import logging
 import sys
 from collections import defaultdict
 from types import ModuleType
-from typing import Dict, List, Optional, Type, cast, Iterable, Any
+from typing import Dict, List, Optional, Type, cast, Iterable, Any, overload
 
 import serialzy.serializers
 from serialzy.api import Serializer, SerializerRegistry
@@ -87,7 +87,18 @@ class DefaultSerializerRegistry(SerializerRegistry):
     def is_registered(self, serializer: Serializer) -> bool:
         return type(serializer) in self._serializer_registry
 
-    def find_serializer_by_type(self, typ: Type) -> Optional[Serializer]:
+    @overload
+    def find_serializer_by_type(self, typ: object) -> Optional[Serializer]:
+        # Problem: https://github.com/python/mypy/issues/9773
+        # Solution I got from here:
+        # https://github.com/davidfstr/trycast/blob/cf658fbaab1bf937cf607de3c20085178ecb11c9/trycast.py#L274
+        pass
+
+    @overload
+    def find_serializer_by_type(self, typ: Type) -> Optional[Serializer]:  # type: ignore[misc]
+        pass
+
+    def find_serializer_by_type(self, typ) -> Optional[Serializer]:
         if typ in self._serializer_type_cache:
             return self._serializer_type_cache[typ]
 

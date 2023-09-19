@@ -26,17 +26,22 @@ class ModelBaseSerializerTests(TestCase):
 
     def base_test(self, model: Any, expected_serializer):
         serializer = self.registry.find_serializer_by_type(type(model))
+        assert serializer
+
         self._assert_model_serializer(serializer, expected_serializer)
         return serialize_and_deserialize(serializer, model)
 
     def base_test_with_meta(self, model: Any, expected_serializer):
         serializer = self.registry.find_serializer_by_type(type(model))
+        assert serializer
+        assert isinstance(serializer, ModelBaseSerializer)
+
         self._assert_model_serializer(serializer, expected_serializer)
-        self.assertIsInstance(serializer, ModelBaseSerializer)
         return serialize_and_deserialize_with_meta(serializer, model)
 
     def base_invalid_types(self, model, class_type):
         serializer = self.registry.find_serializer_by_type(class_type)
+        assert serializer
 
         with self.assertRaisesRegex(TypeError, 'Invalid object type*'):
             with tempfile.TemporaryFile() as file:
@@ -52,6 +57,8 @@ class ModelBaseSerializerTests(TestCase):
 
     def base_schema(self, data_format: str, class_type):
         serializer = self.registry.find_serializer_by_data_format(data_format)
+        assert serializer
+
         schema = serializer.schema(class_type)
 
         self.assertEqual(data_format, schema.data_format)
@@ -61,6 +68,7 @@ class ModelBaseSerializerTests(TestCase):
 
     def base_resolve(self, data_format: str, class_type):
         serializer = self.registry.find_serializer_by_data_format(data_format)
+        assert serializer
 
         typ = serializer.resolve(
             Schema(data_format, 'serialzy_python_type_reference', json.dumps({

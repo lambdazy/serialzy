@@ -24,6 +24,7 @@ class ExceptionSerializationTests(TestCase):
             exception = sys.exc_info()
 
         serializer = self.registry.find_serializer_by_type(TypeError)
+        assert serializer
         self.assertFalse(serializer.stable())
         self.assertIn('cloudpickle', serializer.meta())
 
