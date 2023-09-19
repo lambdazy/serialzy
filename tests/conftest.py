@@ -7,9 +7,13 @@ from pathlib import Path
 import pytest
 
 
+def get_serialzy_location():
+    return Path(__file__).parent.parent
+
+
 @pytest.fixture(scope='session')
 def serialzy_location():
-    return Path(__file__).parent.parent
+    return get_serialzy_location()
 
 
 @pytest.fixture(autouse=True, scope='session')
@@ -26,10 +30,10 @@ def pytest_addoption(parser):
 
 def pytest_collection_modifyitems(config, items):
     empty_venv_tests = config.option.empty_venv_tests
-    serialzy_location = Path(__file__).parent.parent
+    serialzy_path = get_serialzy_location()
 
     for item in items[:]:
-        path = Path(item.fspath).relative_to(serialzy_location)
+        path = Path(item.fspath).relative_to(serialzy_path)
 
         if sys.version_info >= (3, 9):
             empty_tests = path.is_relative_to('tests/empty_env')
