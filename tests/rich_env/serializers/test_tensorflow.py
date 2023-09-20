@@ -1,14 +1,8 @@
-import shutil
-import tempfile
-from typing import cast
-
 # noinspection PyPackageRequirements
 import numpy as np
 # noinspection PyPackageRequirements
 import tensorflow as tf
 
-from serialzy.api import Serializer
-from serialzy.serializers.base_model import ModelBaseSerializer
 from serialzy.serializers.tensorflow import TensorflowKerasSerializer, TensorflowPureSerializer
 from tests.rich_env.serializers.test_base_model import ModelBaseSerializerTests
 
