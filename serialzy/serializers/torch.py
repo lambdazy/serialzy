@@ -2,8 +2,6 @@ import inspect
 from pathlib import Path
 from typing import BinaryIO, Type, Any, Optional
 
-from packaging import version  # type: ignore
-
 from serialzy.serializers.base_model import ModelBaseSerializer, serialize_to_file, deserialize_from_file, \
     unpack_model_file
 

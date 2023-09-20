@@ -40,6 +40,7 @@ class CatboostPoolSerializationTests(ModelBaseSerializerTests):
             weight=[0.1, 0.2, 0.3],
         )
         serializer = self.registry.find_serializer_by_type(type(pool))
+        assert serializer
         with self.assertRaisesRegex(SerialzyError, 'nly quantized pools can be serialized*'):
             serialize_and_deserialize(serializer, pool)
 

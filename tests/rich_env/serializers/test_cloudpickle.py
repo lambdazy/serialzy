@@ -23,6 +23,7 @@ class CloudpickleSerializationTests(TestCase):
                 self.x = x
 
         serializer = self.registry.find_serializer_by_type(B)
+        assert serializer
         b = B(42)
         deserialized = serialize_and_deserialize(serializer, b)
 
@@ -30,6 +31,7 @@ class CloudpickleSerializationTests(TestCase):
         self.assertFalse(serializer.stable())
 
         serializer = self.registry.find_serializer_by_type(type(B))
+        assert serializer
         deserialized = serialize_and_deserialize(serializer, B)
         self.assertEqual(B, deserialized)
 
@@ -39,6 +41,7 @@ class CloudpickleSerializationTests(TestCase):
                 self.x = x
 
         serializer = self.registry.find_serializer_by_type(B)
+        assert serializer
         schema = serializer.schema(B)
 
         self.assertEqual(StandardDataFormats.pickle.name, schema.data_format)
@@ -53,6 +56,7 @@ class CloudpickleSerializationTests(TestCase):
                 self.x = x
 
         serializer = self.registry.find_serializer_by_data_format(StandardDataFormats.pickle.name)
+        assert serializer
         schema = serializer.schema(B)
 
         typ = serializer.resolve(schema)
@@ -105,12 +109,14 @@ class CloudpickleSerializationTests(TestCase):
         unpickled_msg_type = cloudpickle.loads(pickled_msg_type)
 
         with tempfile.TemporaryFile() as file:
-            self.registry.find_serializer_by_type(type(msg)).serialize(msg, file)
+            serializer = self.registry.find_serializer_by_type(type(msg))
+            assert serializer
+            serializer.serialize(msg, file)
             file.flush()
             file.seek(0)
-            result = self.registry.find_serializer_by_type(
-                unpickled_msg_type
-            ).deserialize(file)
+            serializer = self.registry.find_serializer_by_type(unpickled_msg_type)
+            assert serializer
+            result = serializer.deserialize(file)
 
         self.assertEqual(msg.a, result.a)
 
@@ -120,6 +126,7 @@ class CloudpickleSerializationTests(TestCase):
                 self.x = x
 
         serializer = self.registry.find_serializer_by_type(B)
+        assert serializer
 
         with tempfile.TemporaryFile() as file:
             serializer.serialize(B(1), file)

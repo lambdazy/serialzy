@@ -114,7 +114,7 @@ class ModelBaseSerializer(DefaultSchemaSerializerByReference, ABC):
             importlib.import_module(self.module)
 
             return True
-        except:
+        except Exception:
             return False
 
     def stable(self) -> bool:

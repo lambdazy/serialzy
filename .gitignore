@@ -136,14 +136,20 @@ buildNumber.properties
 .DS_Store
 __pycache__
 
-# pylzy install artifacts
+# install artifacts
 build/
 dist/
 *.egg-info
 
-#tox
+# tox
 .tox/
 
-#coverage
+# coverage
 *.coverage
 coverage.svg
+
+# catboost
+catboost_info
+
+# vim
+*.sw*

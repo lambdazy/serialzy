@@ -4,6 +4,7 @@ import pkgutil
 from types import ModuleType
 from typing import Dict, Type, Optional
 
+# TODO: change to importlib.metadata after dropping 3.7
 import pkg_resources
 
 

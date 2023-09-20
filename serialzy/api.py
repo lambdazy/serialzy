@@ -6,8 +6,6 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, BinaryIO, Callable, Dict, Optional, Type, Union
 
-from packaging import version  # type: ignore
-
 from serialzy.types import get_type
 
 _LOG = logging.getLogger(__name__)
@@ -179,8 +177,10 @@ class Serializer(abc.ABC):
     def _check_type(self, typ: Type) -> None:
         supported = self.supported_types()
         # mypy issue: https://github.com/python/mypy/issues/3060
-        if (isinstance(supported, Type) and typ != supported) or (  # type: ignore
-            not isinstance(supported, Type) and not supported(typ)):  # type: ignore
+        if (
+            (isinstance(supported, Type) and typ != supported) or  # type: ignore
+            (not isinstance(supported, Type) and not supported(typ))  # type: ignore
+        ):
             raise TypeError(f'Invalid object type {typ} for the serializer {type(self)}')
 
     @staticmethod

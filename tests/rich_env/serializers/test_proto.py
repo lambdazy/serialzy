@@ -27,6 +27,7 @@ class ProtoSerializationTests(TestCase):
 
         test_message = TestMessage(42)
         serializer = self.registry.find_serializer_by_type(type(test_message))
+        assert serializer
 
         self.assertEqual(test_message.a, serialize_and_deserialize(serializer, test_message).a)
         self.assertTrue(serializer.stable())
@@ -46,6 +47,7 @@ class ProtoSerializationTests(TestCase):
             b: int32 = field(2, default=1)
 
         serializer = self.registry.find_serializer_by_data_format(StandardDataFormats.proto.name)
+        assert serializer
         # noinspection DuplicatedCode
         with tempfile.TemporaryFile() as file:
             obj = TestMessage(5)
@@ -67,6 +69,7 @@ class ProtoSerializationTests(TestCase):
             a: int32 = field(1, default=0)
 
         serializer = self.registry.find_serializer_by_data_format(StandardDataFormats.proto.name)
+        assert serializer
         schema = serializer.schema(TestMessage)
 
         self.assertEqual(StandardDataFormats.proto.name, schema.data_format)
@@ -82,7 +85,8 @@ class ProtoSerializationTests(TestCase):
             a: int32 = field(1, default=0)
 
         serializer = self.registry.find_serializer_by_data_format(StandardDataFormats.proto.name)
-        self.assertFalse(serializer.supported_types()(Optional[str]))
+        assert serializer
+        self.assertFalse(serializer.supported_types()(Optional[str]))  # type: ignore
         self.assertFalse(serializer.supported_types()(str))
         self.assertTrue(serializer.supported_types()(TestMessage))
 
@@ -93,6 +97,7 @@ class ProtoSerializationTests(TestCase):
             a: int32 = field(1, default=0)
 
         serializer = self.registry.find_serializer_by_data_format(StandardDataFormats.proto.name)
+        assert serializer
         schema = serializer.schema(TestMessage)
 
         typ = serializer.resolve(schema)
@@ -144,6 +149,7 @@ class ProtoSerializationTests(TestCase):
             a: int32 = field(1, default=0)
 
         serializer = self.registry.find_serializer_by_type(TestMessage)
+        assert serializer
 
         with self.assertRaisesRegex(TypeError, 'Invalid object type*'):
             with tempfile.TemporaryFile() as file:
