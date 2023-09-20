@@ -1,15 +1,20 @@
 import inspect
+from pathlib import Path
 from typing import BinaryIO, Type, Any, Optional
 
 from packaging import version  # type: ignore
 
-from serialzy.serializers.base_model import ModelBaseSerializer, serialize_to_file, deserialize_from_file
+from serialzy.serializers.base_model import ModelBaseSerializer, serialize_to_file, deserialize_from_file, \
+    unpack_model_file
 
 
 # noinspection PyPackageRequirements
 class TorchSerializer(ModelBaseSerializer):
     def __init__(self):
         super().__init__("torch", __name__)
+
+    def unpack_model(self, source: BinaryIO, dest_dir: str) -> None:
+        unpack_model_file(source, Path(dest_dir) / "model.pt")
 
     def _serialize(self, obj: Any, dest: BinaryIO) -> None:
         import torch  # type: ignore

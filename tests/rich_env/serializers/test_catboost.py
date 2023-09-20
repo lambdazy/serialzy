@@ -76,6 +76,21 @@ class CatboostModelSerializationTests(ModelBaseSerializerTests):
         deserialized_model = self.base_test(model, CatboostModelSerializer)
         numpy.testing.assert_array_equal(model.get_leaf_weights(), deserialized_model.get_leaf_weights())
 
+    def test_unpack(self):
+        # example from https://catboost.ai/en/docs/concepts/python-usages-examples
+        # noinspection DuplicatedCode
+        train_data = [[1, 4, 5, 6],
+                      [4, 5, 6, 7],
+                      [30, 40, 50, 60]]
+        train_labels = [10, 20, 30]
+        model = CatBoostRegressor(iterations=2, learning_rate=1, depth=2, silent=True)
+        model.fit(train_data, train_labels)
+
+        with self.base_unpack_test(model, CatboostModelSerializer) as test_dir_name:
+            deserialized_model = CatBoostRegressor().load_model(test_dir_name + "/model.cbm")
+
+        numpy.testing.assert_array_equal(model.get_leaf_weights(), deserialized_model.get_leaf_weights())
+
     def test_schema(self):
         self.base_schema('cbm', CatBoostRanker)
 

@@ -3,7 +3,7 @@ import logging
 import os
 import shutil
 import tempfile
-from abc import ABC
+from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Dict, Type, BinaryIO, Any, Union, Callable, Optional
 
@@ -69,12 +69,44 @@ def deserialize_from_dir(source: BinaryIO, read_from_dir) -> Any:
         return model
 
 
+def unpack_model_file(source: BinaryIO, destination: Path) -> None:
+    with destination.open("wb") as handle:
+        while True:
+            data = source.read(8096)
+            if not data:
+                break
+            handle.write(data)
+        handle.flush()
+        os.fsync(handle.fileno())
+
+
+def unpack_model_tar(source: BinaryIO, destination: Path) -> None:
+    with tempfile.NamedTemporaryFile(suffix=".tar") as handle:
+        while True:
+            data = source.read(8096)
+            if not data:
+                break
+            handle.write(data)
+        handle.flush()
+        os.fsync(handle.fileno())
+        shutil.unpack_archive(handle.name, destination, "tar")
+
+
 class ModelBaseSerializer(DefaultSchemaSerializerByReference, ABC):
     META_FILE_NAME = 'meta.json'
 
     def __init__(self, module: str, serializer_name: str):
         self.module = module
         self.logger = logging.getLogger(serializer_name)
+
+    @abstractmethod
+    def unpack_model(self, source: BinaryIO, dest_dir: str) -> None:
+        """
+        Create model file in `dest_dir` and write serialized model (without serialzy metadata) into the file
+        :param source: model data is retrieving from source
+        :param dest_dir: model file is creating in dest_dir
+        """
+        pass
 
     def available(self) -> bool:
         # noinspection PyBroadException

@@ -1,12 +1,12 @@
 import json
 import tempfile
 from json import JSONDecodeError
-from typing import Any
+from typing import Any, cast
 from unittest import TestCase
 
 from serialzy.serializers.base_model import ModelBaseSerializer
 
-from serialzy.api import Schema
+from serialzy.api import Schema, Serializer
 
 from serialzy.registry import DefaultSerializerRegistry
 from tests.rich_env.serializers.utils import serialize_and_deserialize, serialize_and_deserialize_with_meta
@@ -23,6 +23,22 @@ class ModelBaseSerializerTests(TestCase):
         self.assertTrue(serializer.available())
         self.assertIn(self.module, serializer.meta())
         self.assertIn(self.module, serializer.requirements())
+
+    def base_unpack_test(self, model: Any, expected_serializer) -> tempfile.TemporaryDirectory:
+        serializer = self.registry.find_serializer_by_type(type(model))
+
+        self._assert_model_serializer(serializer, expected_serializer)
+
+        with tempfile.TemporaryFile() as file:
+            serializer.serialize(model, file)
+            file.flush()
+            file.seek(0)
+
+            self.assertEqual(serializer.data_format(), Serializer.deserialize_data_format(file))
+
+            temp_dir = tempfile.TemporaryDirectory()
+            cast(ModelBaseSerializer, serializer).unpack_model(file, temp_dir.name)
+            return temp_dir
 
     def base_test(self, model: Any, expected_serializer):
         serializer = self.registry.find_serializer_by_type(type(model))

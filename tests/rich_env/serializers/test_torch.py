@@ -49,6 +49,16 @@ class TorchSerializationTests(ModelBaseSerializerTests):
         deserialized_model = self.base_test(model, TorchSerializer)
         self.assertTrue(np.allclose(model(x).tolist(), deserialized_model(x).tolist()))
 
+    def test_unpack_custom_model(self):
+        x = torch.tensor(np.random.random(100).astype(np.float32).reshape(1, 1, 10, 10))
+        model = MyModel()
+        model.eval()
+
+        with self.base_unpack_test(model, TorchSerializer) as test_dir_name:
+            deserialized_model = torch.jit.load(test_dir_name + "/model.pt")
+
+        self.assertTrue(np.allclose(model(x).tolist(), deserialized_model(x).tolist()))
+
     def test_serialization_custom_model_with_meta(self):
         x = torch.tensor(np.random.random(100).astype(np.float32).reshape(1, 1, 10, 10))
         model = MyModel()

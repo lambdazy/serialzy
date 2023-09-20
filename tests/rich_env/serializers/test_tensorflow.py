@@ -1,8 +1,14 @@
+import shutil
+import tempfile
+from typing import cast
+
 # noinspection PyPackageRequirements
 import numpy as np
 # noinspection PyPackageRequirements
 import tensorflow as tf
 
+from serialzy.api import Serializer
+from serialzy.serializers.base_model import ModelBaseSerializer
 from serialzy.serializers.tensorflow import TensorflowKerasSerializer, TensorflowPureSerializer
 from tests.rich_env.serializers.test_base_model import ModelBaseSerializerTests
 
@@ -42,6 +48,20 @@ class TensorflowKerasSerializerTests(ModelBaseSerializerTests):
         layer = tf.keras.layers.Dense(32)(input_x)
         model = tf.keras.Model(inputs=input_x, outputs=layer)
         deserialized_model = self.base_test_with_meta(model, TensorflowKerasSerializer)
+
+        x = tf.random.uniform((10, 32))
+        self.assertTrue(np.allclose(model.predict(x), deserialized_model.predict(x)))
+
+    def test_unpack_custom_keras_model(self):
+        model = MyModel()
+        model.compile(loss=tf.keras.losses.MeanSquaredError(),
+                      metrics=[tf.keras.metrics.MeanAbsoluteError()])
+        x = np.random.random((10, 32))
+        y = np.random.random((10, 1))
+        model.fit(x, y)
+
+        with self.base_unpack_test(model, TensorflowKerasSerializer) as test_dir_name:
+            deserialized_model = tf.keras.models.load_model(test_dir_name + "/model.savedmodel")
 
         x = tf.random.uniform((10, 32))
         self.assertTrue(np.allclose(model.predict(x), deserialized_model.predict(x)))

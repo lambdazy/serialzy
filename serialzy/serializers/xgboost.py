@@ -1,14 +1,19 @@
+from pathlib import Path
 from typing import BinaryIO, Type, Any, Optional
 
 from packaging import version  # type: ignore
 
-from serialzy.serializers.base_model import ModelBaseSerializer, serialize_to_file, deserialize_from_file
+from serialzy.serializers.base_model import ModelBaseSerializer, serialize_to_file, deserialize_from_file, \
+    unpack_model_file
 
 
 # noinspection PyPackageRequirements
 class XGBoostSerializer(ModelBaseSerializer):
     def __init__(self):
         super().__init__("xgboost", __name__)
+
+    def unpack_model(self, source: BinaryIO, dest_dir: str) -> None:
+        unpack_model_file(source, Path(dest_dir) / "model")
 
     def _serialize(self, obj: Any, dest: BinaryIO) -> None:
         serialize_to_file(dest, lambda x: obj.save_model(x))
