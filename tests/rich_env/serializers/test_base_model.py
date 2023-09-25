@@ -30,8 +30,6 @@ class ModelBaseSerializerTests(TestCase):
         self._assert_model_serializer(serializer, expected_serializer)
 
         with tempfile.TemporaryFile() as file:
-            serializer = cast(ModelBaseSerializer, serializer)
-
             serializer.serialize(model, file)
             file.flush()
             file.seek(0)

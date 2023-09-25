@@ -1,9 +1,14 @@
+from os import PathLike
 from pathlib import Path
 from typing import BinaryIO, Callable, Type, Union, Any, Optional
 
 from serialzy.errors import SerialzyError
-from serialzy.serializers.base_model import ModelBaseSerializer, serialize_to_file, deserialize_from_file, \
+from serialzy.serializers.base_model import (
+    ModelBaseSerializer,
+    serialize_to_file,
+    deserialize_from_file,
     unpack_model_file
+)
 
 
 # noinspection PyPackageRequirements
@@ -11,8 +16,10 @@ class CatboostPoolSerializer(ModelBaseSerializer):
     def __init__(self):
         super().__init__("catboost", __name__)
 
-    def unpack_model(self, source: BinaryIO, dest_dir: str) -> None:
-        unpack_model_file(source, Path(dest_dir) / "model.bin")
+    def unpack_model(self, source: BinaryIO, dest_dir: Union[str, PathLike]) -> PathLike:
+        model_path = Path(dest_dir) / "model.bin"
+        unpack_model_file(source, model_path)
+        return model_path
 
     def _serialize(self, obj: Any, dest: BinaryIO) -> None:
         if not obj.is_quantized():  # type: ignore
@@ -38,8 +45,10 @@ class CatboostModelSerializer(ModelBaseSerializer):
     def __init__(self):
         super().__init__("catboost", __name__)
 
-    def unpack_model(self, source: BinaryIO, dest_dir: str) -> None:
-        unpack_model_file(source, Path(dest_dir) / f"model.{self.data_format()}")
+    def unpack_model(self, source: BinaryIO, dest_dir: Union[str, PathLike]) -> PathLike:
+        model_path = Path(dest_dir) / f"model.{self.data_format()}"
+        unpack_model_file(source, model_path)
+        return model_path
 
     def _serialize(self, obj: Any, dest: BinaryIO) -> None:
         serialize_to_file(dest, lambda x: obj.save_model(x, format=self.data_format()))

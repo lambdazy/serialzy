@@ -14,6 +14,8 @@ from serialzy.api import Schema, VersionBoundary
 from serialzy.base import DefaultSchemaSerializerByReference
 from serialzy.utils import cached_installed_packages, module_name
 
+__BUFFER_SIZE_FOR_MODELS__ = 65536
+
 
 # noinspection PyPackageRequirements
 def serialize_to_file(dest: BinaryIO, save_to_file) -> None:
@@ -71,25 +73,25 @@ def deserialize_from_dir(source: BinaryIO, read_from_dir) -> Any:
 
 def unpack_model_file(source: BinaryIO, destination: Path) -> None:
     with destination.open("wb") as handle:
-        while True:
-            data = source.read(8096)
-            if not data:
-                break
-            handle.write(data)
-        handle.flush()
-        os.fsync(handle.fileno())
+        __unpack_model(source, handle)
 
 
 def unpack_model_tar(source: BinaryIO, destination: Path) -> None:
     with tempfile.NamedTemporaryFile(suffix=".tar") as handle:
-        while True:
-            data = source.read(8096)
-            if not data:
-                break
-            handle.write(data)
+        __unpack_model(source, handle)
+
         handle.flush()
         os.fsync(handle.fileno())
+
         shutil.unpack_archive(handle.name, destination, "tar")
+
+
+def __unpack_model(source: BinaryIO, destination: BinaryIO) -> None:
+    while True:
+        data = source.read(__BUFFER_SIZE_FOR_MODELS__)
+        if not data:
+            break
+        destination.write(data)
 
 
 class ModelBaseSerializer(DefaultSchemaSerializerByReference, ABC):
@@ -100,11 +102,12 @@ class ModelBaseSerializer(DefaultSchemaSerializerByReference, ABC):
         self.logger = logging.getLogger(serializer_name)
 
     @abstractmethod
-    def unpack_model(self, source: BinaryIO, dest_dir: str) -> None:
+    def unpack_model(self, source: BinaryIO, dest_dir: Union[str, bytes, os.PathLike]) -> os.PathLike:
         """
         Create model file in `dest_dir` and write serialized model (without serialzy metadata) into the file
         :param source: model data is retrieving from source
-        :param dest_dir: model file is creating in dest_dir
+        :param dest_dir: model data will be layouted in dest_dir
+        :return path to model data
         """
         pass
 

@@ -161,7 +161,7 @@ class Serializer(abc.ABC):
         return data_format
 
     def _deserialize_type(self, source: BinaryIO) -> Type:
-        schema = self.__class__._deserialize_schema(source)
+        schema = self._deserialize_schema(source)
         typ = self.resolve(schema)
         return typ
 
