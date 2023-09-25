@@ -5,7 +5,7 @@ import shutil
 import tempfile
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Dict, Type, BinaryIO, Any, Union, Callable, Optional
+from typing import Dict, Type, BinaryIO, Any, Union, Callable, Optional, IO
 
 from packaging import version  # type: ignore
 
@@ -71,12 +71,12 @@ def deserialize_from_dir(source: BinaryIO, read_from_dir) -> Any:
         return model
 
 
-def unpack_model_file(source: BinaryIO, destination: Path) -> None:
+def unpack_model_file(source: IO[bytes], destination: Path) -> None:
     with destination.open("wb") as handle:
         __unpack_model(source, handle)
 
 
-def unpack_model_tar(source: BinaryIO, destination: Path) -> None:
+def unpack_model_tar(source: IO[bytes], destination: Path) -> None:
     with tempfile.NamedTemporaryFile(suffix=".tar") as handle:
         __unpack_model(source, handle)
 
@@ -86,7 +86,7 @@ def unpack_model_tar(source: BinaryIO, destination: Path) -> None:
         shutil.unpack_archive(handle.name, destination, "tar")
 
 
-def __unpack_model(source: BinaryIO, destination: BinaryIO) -> None:
+def __unpack_model(source: IO[bytes], destination: IO[bytes]) -> None:
     while True:
         data = source.read(__BUFFER_SIZE_FOR_MODELS__)
         if not data:
