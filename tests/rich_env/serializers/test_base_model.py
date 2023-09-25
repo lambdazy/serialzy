@@ -1,7 +1,7 @@
 import json
 import tempfile
 from json import JSONDecodeError
-from typing import Any, cast
+from typing import Any
 from unittest import TestCase
 
 from serialzy.serializers.base_model import ModelBaseSerializer
@@ -17,7 +17,7 @@ class ModelBaseSerializerTests(TestCase):
         self.module = module
         self.registry = DefaultSerializerRegistry()
 
-    def _assert_model_serializer(self, serializer, expected_serializer):
+    def _assert_serializer(self, serializer, expected_serializer):
         self.assertIsInstance(serializer, expected_serializer)
         self.assertTrue(serializer.stable())
         self.assertTrue(serializer.available())
@@ -27,7 +27,8 @@ class ModelBaseSerializerTests(TestCase):
     def base_unpack_test(self, model: Any, expected_serializer) -> tempfile.TemporaryDirectory:
         serializer = self.registry.find_serializer_by_type(type(model))
 
-        self._assert_model_serializer(serializer, expected_serializer)
+        self.assertIsInstance(serializer, ModelBaseSerializer)
+        self._assert_serializer(serializer, expected_serializer)
 
         with tempfile.TemporaryFile() as file:
             serializer.serialize(model, file)
@@ -37,22 +38,23 @@ class ModelBaseSerializerTests(TestCase):
             self.assertEqual(serializer.data_format(), Serializer.deserialize_data_format(file))
 
             temp_dir = tempfile.TemporaryDirectory()
-            cast(ModelBaseSerializer, serializer).unpack_model(file, temp_dir.name)
+            serializer.unpack_model(file, temp_dir.name)
             return temp_dir
 
     def base_test(self, model: Any, expected_serializer):
         serializer = self.registry.find_serializer_by_type(type(model))
-        assert serializer
 
-        self._assert_model_serializer(serializer, expected_serializer)
+        self.assertIsInstance(serializer, ModelBaseSerializer)
+        self._assert_serializer(serializer, expected_serializer)
+
         return serialize_and_deserialize(serializer, model)
 
     def base_test_with_meta(self, model: Any, expected_serializer):
         serializer = self.registry.find_serializer_by_type(type(model))
-        assert serializer
-        assert isinstance(serializer, ModelBaseSerializer)
 
-        self._assert_model_serializer(serializer, expected_serializer)
+        self.assertIsInstance(serializer, ModelBaseSerializer)
+        self._assert_serializer(serializer, expected_serializer)
+
         return serialize_and_deserialize_with_meta(serializer, model)
 
     def base_invalid_types(self, model, class_type):

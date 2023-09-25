@@ -1,5 +1,5 @@
 import sys
-from typing import cast, Tuple, Iterable
+from typing import Tuple, Iterable
 
 from serialzy.api import SerializerRegistry, Serializer
 from serialzy.registry import DefaultSerializerRegistry
@@ -16,7 +16,9 @@ def _download_and_unpack_model(registry: SerializerRegistry, url: str, dest_dir:
         if not isinstance(serializer, ModelBaseSerializer):
             raise ValueError(f"Data by source_url '{url}' is not a model")
 
-        cast(ModelBaseSerializer, serializer).unpack_model(data, dest_dir)
+        assert isinstance(serializer, ModelBaseSerializer)
+
+        serializer.unpack_model(data, dest_dir)
 
 
 def download_and_unpack_models(urls_and_dirs: Iterable[Tuple[str, str]]) -> None:
