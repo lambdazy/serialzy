@@ -102,7 +102,7 @@ class ModelBaseSerializer(DefaultSchemaSerializerByReference, ABC):
         self.logger = logging.getLogger(serializer_name)
 
     @abstractmethod
-    def unpack_model(self, source: BinaryIO, dest_dir: Union[str, bytes, os.PathLike]) -> os.PathLike:
+    def unpack_model(self, source: BinaryIO, dest_dir: Union[str, os.PathLike]) -> os.PathLike:
         """
         Create model file in `dest_dir` and write serialized model (without serialzy metadata) into the file
         :param source: model data is retrieving from source

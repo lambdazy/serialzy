@@ -27,7 +27,7 @@ class ModelBaseSerializerTests(TestCase):
     def base_unpack_test(self, model: Any, expected_serializer) -> tempfile.TemporaryDirectory:
         serializer = self.registry.find_serializer_by_type(type(model))
 
-        self.assertIsInstance(serializer, ModelBaseSerializer)
+        assert isinstance(serializer, ModelBaseSerializer)
         self._assert_serializer(serializer, expected_serializer)
 
         with tempfile.TemporaryFile() as file:
@@ -44,7 +44,7 @@ class ModelBaseSerializerTests(TestCase):
     def base_test(self, model: Any, expected_serializer):
         serializer = self.registry.find_serializer_by_type(type(model))
 
-        self.assertIsInstance(serializer, ModelBaseSerializer)
+        assert isinstance(serializer, ModelBaseSerializer)
         self._assert_serializer(serializer, expected_serializer)
 
         return serialize_and_deserialize(serializer, model)
@@ -52,7 +52,7 @@ class ModelBaseSerializerTests(TestCase):
     def base_test_with_meta(self, model: Any, expected_serializer):
         serializer = self.registry.find_serializer_by_type(type(model))
 
-        self.assertIsInstance(serializer, ModelBaseSerializer)
+        assert isinstance(serializer, ModelBaseSerializer)
         self._assert_serializer(serializer, expected_serializer)
 
         return serialize_and_deserialize_with_meta(serializer, model)
