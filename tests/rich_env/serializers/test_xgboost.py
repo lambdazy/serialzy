@@ -27,6 +27,22 @@ class XGBoostModelSerializationTests(ModelBaseSerializerTests):
         deserialized_model = self.base_test(model, XGBoostSerializer)
         self.assertTrue(np.allclose(model.predict_proba(x_test), deserialized_model.predict(dt)))
 
+    def test_unpack(self):
+        dataset = datasets.load_wine()
+        x = dataset.data
+        y = dataset.target
+        x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.30)
+        dt = xgboost.DMatrix(x_test)
+
+        model = xgboost.XGBClassifier()
+        model.fit(x_train, y_train)
+
+        with self.base_unpack_test(model, XGBoostSerializer) as test_dir_name:
+            deserialized_model = xgboost.Booster({'nthread': 4})
+            deserialized_model.load_model(test_dir_name + "/model")
+
+        self.assertTrue(np.allclose(model.predict_proba(x_test), deserialized_model.predict(dt)))
+
     def test_serialization_with_meta(self):
         dataset = datasets.load_wine()
         x = dataset.data

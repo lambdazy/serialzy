@@ -1,13 +1,25 @@
 import inspect
-from typing import Type, Any, BinaryIO, Optional
+from os import PathLike
+from pathlib import Path
+from typing import Type, Any, BinaryIO, Optional, Union
 
-from serialzy.serializers.base_model import ModelBaseSerializer, serialize_to_dir, deserialize_from_dir
+from serialzy.serializers.base_model import (
+    ModelBaseSerializer,
+    serialize_to_dir,
+    deserialize_from_dir,
+    unpack_model_tar
+)
 
 
 # noinspection PyPackageRequirements
 class TensorflowKerasSerializer(ModelBaseSerializer):
     def __init__(self):
         super().__init__("keras", __name__)
+
+    def unpack_model(self, source: BinaryIO, dest_dir: Union[str, PathLike]) -> PathLike:
+        model_path = Path(dest_dir) / "model.savedmodel"
+        unpack_model_tar(source, model_path)
+        return model_path
 
     def data_format(self) -> str:
         return "tf_keras"
@@ -30,6 +42,11 @@ class TensorflowKerasSerializer(ModelBaseSerializer):
 class TensorflowPureSerializer(ModelBaseSerializer):
     def __init__(self):
         super().__init__("tensorflow", __name__)
+
+    def unpack_model(self, source: BinaryIO, dest_dir: Union[str, PathLike]) -> PathLike:
+        model_path = Path(dest_dir) / "model.savedmodel"
+        unpack_model_tar(source, model_path)
+        return model_path
 
     def data_format(self) -> str:
         return "tf_pure"

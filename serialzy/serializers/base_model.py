@@ -3,9 +3,9 @@ import logging
 import os
 import shutil
 import tempfile
-from abc import ABC
+from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Dict, Type, BinaryIO, Any, Union, Callable, Optional
+from typing import Dict, Type, BinaryIO, Any, Union, Callable, Optional, IO
 
 from packaging import version  # type: ignore
 
@@ -13,6 +13,8 @@ from serialzy.types import get_type
 from serialzy.api import Schema, VersionBoundary
 from serialzy.base import DefaultSchemaSerializerByReference
 from serialzy.utils import cached_installed_packages, module_name
+
+__BUFFER_SIZE_FOR_MODELS__ = 65536
 
 
 # noinspection PyPackageRequirements
@@ -69,12 +71,45 @@ def deserialize_from_dir(source: BinaryIO, read_from_dir) -> Any:
         return model
 
 
+def unpack_model_file(source: IO[bytes], destination: Path) -> None:
+    with destination.open("wb") as handle:
+        __unpack_model(source, handle)
+
+
+def unpack_model_tar(source: IO[bytes], destination: Path) -> None:
+    with tempfile.NamedTemporaryFile(suffix=".tar") as handle:
+        __unpack_model(source, handle)
+
+        handle.flush()
+        os.fsync(handle.fileno())
+
+        shutil.unpack_archive(handle.name, destination, "tar")
+
+
+def __unpack_model(source: IO[bytes], destination: IO[bytes]) -> None:
+    while True:
+        data = source.read(__BUFFER_SIZE_FOR_MODELS__)
+        if not data:
+            break
+        destination.write(data)
+
+
 class ModelBaseSerializer(DefaultSchemaSerializerByReference, ABC):
     META_FILE_NAME = 'meta.json'
 
     def __init__(self, module: str, serializer_name: str):
         self.module = module
         self.logger = logging.getLogger(serializer_name)
+
+    @abstractmethod
+    def unpack_model(self, source: BinaryIO, dest_dir: Union[str, os.PathLike]) -> os.PathLike:
+        """
+        Create model file in `dest_dir` and write serialized model (without serialzy metadata) into the file
+        :param source: model data is retrieving from source
+        :param dest_dir: model data will be layouted in dest_dir
+        :return path to model data
+        """
+        pass
 
     def available(self) -> bool:
         # noinspection PyBroadException

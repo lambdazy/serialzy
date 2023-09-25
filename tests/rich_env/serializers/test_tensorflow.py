@@ -46,6 +46,20 @@ class TensorflowKerasSerializerTests(ModelBaseSerializerTests):
         x = tf.random.uniform((10, 32))
         self.assertTrue(np.allclose(model.predict(x), deserialized_model.predict(x)))
 
+    def test_unpack_custom_keras_model(self):
+        model = MyModel()
+        model.compile(loss=tf.keras.losses.MeanSquaredError(),
+                      metrics=[tf.keras.metrics.MeanAbsoluteError()])
+        x = np.random.random((10, 32))
+        y = np.random.random((10, 1))
+        model.fit(x, y)
+
+        with self.base_unpack_test(model, TensorflowKerasSerializer) as test_dir_name:
+            deserialized_model = tf.keras.models.load_model(test_dir_name + "/model.savedmodel")
+
+        x = tf.random.uniform((10, 32))
+        self.assertTrue(np.allclose(model.predict(x), deserialized_model.predict(x)))
+
     def test_serialization_custom_keras_model(self):
         model = MyModel()
         model.compile(loss=tf.keras.losses.MeanSquaredError(),

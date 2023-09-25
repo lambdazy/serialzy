@@ -141,16 +141,27 @@ class Serializer(abc.ABC):
                 f"Invalid data format {schema.data_format}, expected {self.data_format()}"
             )
 
-    def _deserialize_type(self, source: BinaryIO) -> Type:
-        first_str = source.read(self.HEADER_BYTES_LEN)
+    @classmethod
+    def _deserialize_schema(cls, source: BinaryIO) -> Schema:
+        first_str = source.read(cls.HEADER_BYTES_LEN)
         if len(first_str) == 0:
             raise ValueError('Source is empty')
-        if first_str != self.HEADER_BYTES:
-            raise ValueError(f'Missing header in source, expected {self.HEADER_BYTES!r}, got {first_str!r}')
+        if first_str != cls.HEADER_BYTES:
+            raise ValueError(f'Missing header in source, expected {cls.HEADER_BYTES!r}, got {first_str!r}')
 
         header_len = int.from_bytes(source.read(8), byteorder='little', signed=False)
         schema_json = source.read(header_len).decode('utf-8')
         schema = Schema(**json.loads(schema_json))
+        return schema
+
+    @classmethod
+    def deserialize_data_format(cls, source: BinaryIO) -> str:
+        schema = cls._deserialize_schema(source)
+        data_format = schema.data_format
+        return data_format
+
+    def _deserialize_type(self, source: BinaryIO) -> Type:
+        schema = self._deserialize_schema(source)
         typ = self.resolve(schema)
         return typ
 

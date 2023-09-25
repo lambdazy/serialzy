@@ -6,7 +6,7 @@ from unittest import TestCase
 
 from serialzy.serializers.base_model import ModelBaseSerializer
 
-from serialzy.api import Schema
+from serialzy.api import Schema, Serializer
 
 from serialzy.registry import DefaultSerializerRegistry
 from tests.rich_env.serializers.utils import serialize_and_deserialize, serialize_and_deserialize_with_meta
@@ -17,26 +17,44 @@ class ModelBaseSerializerTests(TestCase):
         self.module = module
         self.registry = DefaultSerializerRegistry()
 
-    def _assert_model_serializer(self, serializer, expected_serializer):
+    def _assert_serializer(self, serializer, expected_serializer):
         self.assertIsInstance(serializer, expected_serializer)
         self.assertTrue(serializer.stable())
         self.assertTrue(serializer.available())
         self.assertIn(self.module, serializer.meta())
         self.assertIn(self.module, serializer.requirements())
 
+    def base_unpack_test(self, model: Any, expected_serializer) -> tempfile.TemporaryDirectory:
+        serializer = self.registry.find_serializer_by_type(type(model))
+
+        assert isinstance(serializer, ModelBaseSerializer)
+        self._assert_serializer(serializer, expected_serializer)
+
+        with tempfile.TemporaryFile() as file:
+            serializer.serialize(model, file)
+            file.flush()
+            file.seek(0)
+
+            self.assertEqual(serializer.data_format(), Serializer.deserialize_data_format(file))
+
+            temp_dir = tempfile.TemporaryDirectory()
+            serializer.unpack_model(file, temp_dir.name)
+            return temp_dir
+
     def base_test(self, model: Any, expected_serializer):
         serializer = self.registry.find_serializer_by_type(type(model))
-        assert serializer
 
-        self._assert_model_serializer(serializer, expected_serializer)
+        assert isinstance(serializer, ModelBaseSerializer)
+        self._assert_serializer(serializer, expected_serializer)
+
         return serialize_and_deserialize(serializer, model)
 
     def base_test_with_meta(self, model: Any, expected_serializer):
         serializer = self.registry.find_serializer_by_type(type(model))
-        assert serializer
-        assert isinstance(serializer, ModelBaseSerializer)
 
-        self._assert_model_serializer(serializer, expected_serializer)
+        assert isinstance(serializer, ModelBaseSerializer)
+        self._assert_serializer(serializer, expected_serializer)
+
         return serialize_and_deserialize_with_meta(serializer, model)
 
     def base_invalid_types(self, model, class_type):
