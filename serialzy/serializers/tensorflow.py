@@ -78,7 +78,7 @@ class TensorflowPureSerializer(ModelBaseSerializer):
 
     def _types_filter(self, typ: Type):
         import tensorflow as tf  # type: ignore
-        if type in [tf.train.Checkpoint]:
+        if typ in [tf.train.Checkpoint]:
             return True
         if inspect.isclass(typ) and issubclass(typ, tf.Module):
             return True
