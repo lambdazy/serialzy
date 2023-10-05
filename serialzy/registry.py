@@ -63,7 +63,7 @@ class DefaultSerializerRegistry(SerializerRegistry):
             # mypy issue: https://github.com/python/mypy/issues/3060
             if isinstance(serializer.supported_types(), Type):  # type: ignore
                 self._type_registry[cast(Type, serializer.supported_types())].append(serializer)
-        except (ImportError, ModuleNotFoundError):
+        except (ImportError, ModuleNotFoundError, AttributeError):
             pass
 
     def unregister_serializer(self, serializer: Serializer):
@@ -81,7 +81,7 @@ class DefaultSerializerRegistry(SerializerRegistry):
                 if isinstance(serializer.supported_types(),  # type: ignore
                               Type) and serializer.supported_types() in self._type_registry:  # type: ignore
                     del self._type_registry[cast(Type, serializer.supported_types())]
-            except (ImportError, ModuleNotFoundError):
+            except (ImportError, ModuleNotFoundError, AttributeError):
                 pass
 
     def is_registered(self, serializer: Serializer) -> bool:
@@ -114,7 +114,7 @@ class DefaultSerializerRegistry(SerializerRegistry):
                 ):
                     priority = self._serializer_priorities[serializer_type]
                     result = serializer
-            except (ImportError, ModuleNotFoundError):
+            except (ImportError, ModuleNotFoundError, AttributeError):
                 continue
 
         for serializer in self._type_registry[typ]:
