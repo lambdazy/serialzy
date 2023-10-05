@@ -7,3 +7,4 @@ tensorflow; python_version >= '3.10'
 lightgbm>=3.3.5,<4.0.0
 xgboost>=1.5.0,<2.0.0
 torch>=1.13.1+cu117,<2.0.0
+onnx==1.14.1
