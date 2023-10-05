@@ -3,7 +3,7 @@ import importlib
 import json
 import logging
 from abc import ABC
-from typing import Type, cast
+from typing import Type, Any, cast
 from packaging import version  # type: ignore
 from serialzy.utils import cached_installed_packages
 
@@ -77,5 +77,8 @@ class DefaultSchemaSerializerByReference(Serializer, ABC):
         if module == 'builtins' and name == 'NoneType':
             return type(None)
 
-        typ = getattr(importlib.import_module(module), name)
-        return cast(type, typ)
+        if name is not None:
+            typ = getattr(importlib.import_module(module), name)
+            return cast(type, typ)
+
+        return Any
