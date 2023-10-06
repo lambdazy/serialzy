@@ -14,7 +14,7 @@ from serialzy.api import Schema, VersionBoundary
 from serialzy.base import DefaultSchemaSerializerByReference
 from serialzy.utils import cached_installed_packages, module_name
 
-__BUFFER_SIZE_FOR_MODELS__ = 65536
+__IO_BUFFER_SIZE__ = 65536
 
 
 # noinspection PyPackageRequirements
@@ -22,7 +22,7 @@ def serialize_to_file(dest: BinaryIO, save_to_file) -> None:
     with tempfile.NamedTemporaryFile() as handle:
         save_to_file(handle.name)
         while True:
-            data = handle.read(8096)
+            data = handle.read(__IO_BUFFER_SIZE__)
             if not data:
                 break
             dest.write(data)
@@ -31,7 +31,7 @@ def serialize_to_file(dest: BinaryIO, save_to_file) -> None:
 def deserialize_from_file(source: BinaryIO, read_from_file) -> Any:
     with tempfile.NamedTemporaryFile() as handle:
         while True:
-            data = source.read(8096)
+            data = source.read(__IO_BUFFER_SIZE__)
             if not data:
                 break
             handle.write(data)
@@ -47,7 +47,7 @@ def serialize_to_dir(dest: BinaryIO, save_to_dir):
     saved_archive = shutil.make_archive(tar_save_path, "tar", tmpdir)
     with open(saved_archive, "rb") as handle:
         while True:
-            data = handle.read(8096)
+            data = handle.read(__IO_BUFFER_SIZE__)
             if not data:
                 break
             dest.write(data)
@@ -57,7 +57,7 @@ def serialize_to_dir(dest: BinaryIO, save_to_dir):
 def deserialize_from_dir(source: BinaryIO, read_from_dir) -> Any:
     with tempfile.NamedTemporaryFile(suffix=".tar") as handle:
         while True:
-            data = source.read(8096)
+            data = source.read(__IO_BUFFER_SIZE__)
             if not data:
                 break
             handle.write(data)
@@ -88,7 +88,7 @@ def unpack_model_tar(source: IO[bytes], destination: Path) -> None:
 
 def __unpack_model(source: IO[bytes], destination: IO[bytes]) -> None:
     while True:
-        data = source.read(__BUFFER_SIZE_FOR_MODELS__)
+        data = source.read(__IO_BUFFER_SIZE__)
         if not data:
             break
         destination.write(data)

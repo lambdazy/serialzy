@@ -1,8 +1,10 @@
 import inspect
+import json
 from os import PathLike
 from pathlib import Path
 from typing import Type, Any, BinaryIO, Optional, Union
 
+from serialzy.api import Schema
 from serialzy.serializers.base_model import (
     ModelBaseSerializer,
     serialize_to_dir,
@@ -43,6 +45,19 @@ class TensorflowPureSerializer(ModelBaseSerializer):
     def __init__(self):
         super().__init__("tensorflow", __name__)
 
+    def schema(self, typ: Type) -> Schema:
+        if self._is_generic_user_object(typ):
+            return Schema(
+                data_format=self.data_format(),
+                schema_format=self.SCHEMA_FORMAT,
+                schema_content=json.dumps({
+                    "module": self.module,
+                    "name": None
+                }),
+                meta=self.meta()
+            )
+        return super().schema(typ)
+
     def unpack_model(self, source: BinaryIO, dest_dir: Union[str, PathLike]) -> PathLike:
         model_path = Path(dest_dir) / "model.savedmodel"
         unpack_model_tar(source, model_path)
@@ -62,4 +77,16 @@ class TensorflowPureSerializer(ModelBaseSerializer):
 
     def _types_filter(self, typ: Type):
         import tensorflow as tf  # type: ignore
-        return typ in [tf.train.Checkpoint] or (inspect.isclass(typ) and issubclass(typ, tf.Module))
+        return (
+            typ in [tf.train.Checkpoint] or
+            (inspect.isclass(typ) and issubclass(typ, tf.Module)) or
+            self._is_generic_user_object(typ)
+        )
+
+    @staticmethod
+    def _is_generic_user_object(typ: Type) -> bool:
+        return (
+            inspect.isclass(typ) and
+            getattr(typ, "__module__") == "tensorflow.python.saved_model.load" and
+            getattr(typ, "__name__") == "_UserObject"
+        )

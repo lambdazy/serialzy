@@ -1,4 +1,6 @@
 # noinspection PyPackageRequirements
+import tempfile
+
 import numpy as np
 # noinspection PyPackageRequirements
 import tensorflow as tf
@@ -8,7 +10,6 @@ from tests.rich_env.serializers.test_base_model import ModelBaseSerializerTests
 
 
 class MyModel(tf.keras.Model):
-
     def __init__(self):
         super(MyModel, self).__init__()
         self.dense1 = tf.keras.layers.Dense(4, activation=tf.nn.relu, input_shape=(32,))
@@ -145,3 +146,23 @@ class TensorflowPureSerializerTests(ModelBaseSerializerTests):
 
     def test_resolve(self):
         self.base_resolve('tf_pure', tf.train.Checkpoint)
+
+    def test_load_generic_model(self):
+
+        class Adder(tf.Module):
+            @tf.function(input_signature=[tf.TensorSpec(shape=[], dtype=tf.float32)])
+            def __call__(self, x):
+                return x + x
+
+        model = Adder()
+        self.assertEqual(2, model(1))
+
+        with tempfile.TemporaryDirectory(suffix='serialzy_models_tests') as dest_dir:
+            tf.saved_model.save(model, dest_dir)
+            loaded_model = tf.saved_model.load(dest_dir)
+
+        self.assertEqual(2, loaded_model(1))
+
+        deserialized_model = self.base_test_with_meta(loaded_model, TensorflowPureSerializer)
+
+        self.assertEqual(2, deserialized_model(1))
