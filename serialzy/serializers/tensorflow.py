@@ -87,6 +87,6 @@ class TensorflowPureSerializer(ModelBaseSerializer):
     def _is_generic_user_object(typ: Type) -> bool:
         return (
             inspect.isclass(typ) and
-            getattr(typ, "__module__") == "tensorflow.python.saved_model.load" and
-            getattr(typ, "__name__") == "_UserObject"
+            getattr(typ, "__module__", "none") == "tensorflow.python.saved_model.load" and
+            getattr(typ, "__name__", "none") == "_UserObject"
         )
