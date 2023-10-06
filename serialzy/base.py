@@ -81,4 +81,4 @@ class DefaultSchemaSerializerByReference(Serializer, ABC):
             typ = getattr(importlib.import_module(module), name)
             return cast(type, typ)
 
-        return Any
+        return type(Any)
