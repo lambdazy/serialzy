@@ -78,7 +78,7 @@ class TensorflowPureSerializer(ModelBaseSerializer):
     def _types_filter(self, typ: Type):
         import tensorflow as tf  # type: ignore
         return (
-            type in [tf.train.Checkpoint] or
+            typ in [tf.train.Checkpoint] or
             (inspect.isclass(typ) and issubclass(typ, tf.Module)) or
             self._is_generic_user_object(typ)
         )
@@ -86,7 +86,7 @@ class TensorflowPureSerializer(ModelBaseSerializer):
     @staticmethod
     def _is_generic_user_object(typ: Type) -> bool:
         return (
-            inspect.isclass(type) and
+            inspect.isclass(typ) and
             getattr(typ, "__module__") == "tensorflow.python.saved_model.load" and
             getattr(typ, "__name__") == "_UserObject"
         )
