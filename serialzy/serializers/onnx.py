@@ -46,9 +46,9 @@ class ONNXSerializer(ModelBaseSerializer):
         return deserialize_from_file(source, read_onnx)
 
     def data_format(self) -> str:
-        return "onnx"
+        return self.module
 
     def unpack_model(self, source: BinaryIO, dest_dir: Union[str, os.PathLike]) -> os.PathLike:
-        model_path = Path(dest_dir) / "model.onnx"
+        model_path = Path(dest_dir) / f"model.{self.data_format()}"
         unpack_model_file(source, model_path)
         return model_path
