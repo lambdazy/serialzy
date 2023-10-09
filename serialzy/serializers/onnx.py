@@ -25,8 +25,6 @@ class ONNXSerializer(ModelBaseSerializer):
         if not isinstance(obj, onnx.ModelProto):
             raise ValueError(f"Attempt to serialize not an ONNX model with {__name__}")
 
-        assert isinstance(obj, onnx.ModelProto)
-
         def write_onnx(out_filename: str) -> None:
             with open(out_filename, "wb") as f:
                 f.write(obj.SerializeToString())

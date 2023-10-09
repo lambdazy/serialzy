@@ -7,7 +7,7 @@ import tensorflow as tf
 
 class MyKerasModel(tf.keras.Model):
     def __init__(self):
-        super(MyKerasModel, self).__init__()
+        super().__init__()
         self.dense1 = tf.keras.layers.Dense(4, activation=tf.nn.relu, input_shape=(32,))
         self.dense2 = tf.keras.layers.Dense(5, activation=tf.nn.softmax)
 
