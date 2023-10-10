@@ -97,9 +97,9 @@ def __unpack_model(source: IO[bytes], destination: IO[bytes]) -> None:
 class ModelBaseSerializer(DefaultSchemaSerializerByReference, ABC):
     META_FILE_NAME = 'meta.json'
 
-    def __init__(self, module: str, serializer_name: str):
+    def __init__(self, module: str, logger_name: str):
         self.module = module
-        self.logger = logging.getLogger(serializer_name)
+        self.logger = logging.getLogger(logger_name)
 
     @abstractmethod
     def unpack_model(self, source: BinaryIO, dest_dir: Union[str, os.PathLike]) -> os.PathLike:
