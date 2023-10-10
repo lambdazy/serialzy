@@ -1,15 +1,14 @@
 import tempfile
-from typing import List, Callable
+from typing import Any, Callable
 
 # noinspection PyPackageRequirements
 import numpy as np
 # noinspection PyPackageRequirements
-import onnx
-# noinspection PyPackageRequirements
-import onnxruntime
+import torch
 
-from torch import nn
-import torch.onnx
+# noinspection PyPackageRequirements
+import onnx
+import onnxruntime  # type: ignore
 
 from serialzy.serializers.onnx import ONNXSerializer
 from tests.rich_env.serializers.custom_models import SuperResolutionNet
@@ -48,17 +47,17 @@ class ONNXModelSerializationTests(ModelBaseSerializerTests):
     def test_invalid_types(self):
         self.base_invalid_types(self._export_to_onnx(self.torch_model), onnx.ModelProto)
 
-    def _base_onnx_test(self, serialization_routine: Callable[[onnx.ModelProto], onnx.ModelProto]):
+    def _base_onnx_test(self, serialization_routine: Callable[[onnx.ModelProto], onnx.ModelProto]) -> None:
         torch_out = self._infer_with_torch_model(self.torch_model)
         deserialized_model = serialization_routine(self._export_to_onnx(self.torch_model))
         ort_outs = self._infer_with_onnx_model(deserialized_model)
         # compare ONNX Runtime and PyTorch results
         self.assertTrue(np.allclose(to_numpy(torch_out), ort_outs[0], rtol=1e-03, atol=1e-05))
 
-    def _infer_with_torch_model(self, model: nn.Module) -> torch.Tensor:
+    def _infer_with_torch_model(self, model: torch.nn.Module) -> Any:
         return model(self.x_test)
 
-    def _infer_with_onnx_model(self, model: onnx.ModelProto) -> List[int]:
+    def _infer_with_onnx_model(self, model: onnx.ModelProto) -> Any:
         with tempfile.NamedTemporaryFile("wb") as f:
             f.write(model.SerializeToString())
             ort_session = onnxruntime.InferenceSession(f.name, providers=["CPUExecutionProvider"])
@@ -66,11 +65,11 @@ class ONNXModelSerializationTests(ModelBaseSerializerTests):
         ort_inputs = {ort_session.get_inputs()[0].name: to_numpy(self.x_test)}
         return ort_session.run(None, ort_inputs)
 
-    def _export_to_onnx(self, model: nn.Module) -> onnx.ModelProto:
+    def _export_to_onnx(self, model: torch.nn.Module) -> onnx.ModelProto:
         x = torch.randn(1, 1, 224, 224, requires_grad=True)
 
         with tempfile.NamedTemporaryFile("w+b") as f:
-            torch.onnx.export(self.torch_model,  # model being run
+            torch.onnx.export(model,  # model being run
                               x,  # model input (or a tuple for multiple inputs)
                               f,  # where to save the model (can be a file or file-like object)
                               export_params=True,  # store the trained parameter weights inside the model file
