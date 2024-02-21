@@ -8,7 +8,7 @@ from typing import Type, Dict, Union, BinaryIO, Any, cast, Optional, Callable, T
 from packaging import version  # type: ignore
 from typing_extensions import get_args, get_origin
 
-from serialzy.api import Serializer, Schema, SerializerRegistry, VersionBoundary
+from serialzy.api import Serializer, Schema, SerializerRegistry, UserMeta, VersionBoundary
 from serialzy.types import get_type
 from serialzy.utils import cached_installed_packages
 from serialzy.version import __version__
@@ -22,12 +22,12 @@ class UnionSerializerBase(Serializer, ABC):
     def __init__(self, registry: SerializerRegistry):
         self._registry = registry
 
-    def serialize(self, obj: Any, dest: BinaryIO) -> None:
+    def serialize(self, obj: Any, dest: BinaryIO, user_meta: Optional[UserMeta] = None) -> None:
         typ = get_type(obj)
         serializer = self._registry.find_serializer_by_type(typ)
         if serializer is None:
             raise ValueError(f'Cannot find serializer for type {typ}')
-        serializer.serialize(obj, dest)
+        serializer.serialize(obj, dest, user_meta)
 
     def _serialize(self, obj: Any, dest: BinaryIO) -> None:
         """

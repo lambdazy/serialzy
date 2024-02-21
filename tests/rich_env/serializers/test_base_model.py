@@ -9,7 +9,11 @@ from serialzy.serializers.base_model import ModelBaseSerializer
 from serialzy.api import Schema, Serializer
 
 from serialzy.registry import DefaultSerializerRegistry
-from tests.rich_env.serializers.utils import serialize_and_deserialize, serialize_and_deserialize_with_meta
+from tests.rich_env.serializers.utils import (
+    serialize_and_deserialize,
+    serialize_and_deserialize_with_meta,
+    serialize_and_deserialize_with_user_meta,
+)
 
 
 class ModelBaseSerializerTests(TestCase):
@@ -48,6 +52,14 @@ class ModelBaseSerializerTests(TestCase):
         self._assert_serializer(serializer, expected_serializer)
 
         return serialize_and_deserialize(serializer, model)
+
+    def base_test_with_user_meta(self, model: Any, expected_serializer, user_meta):
+        serializer = self.registry.find_serializer_by_type(type(model))
+
+        assert isinstance(serializer, ModelBaseSerializer)
+        self._assert_serializer(serializer, expected_serializer)
+
+        return serialize_and_deserialize_with_user_meta(serializer, model, user_meta)
 
     def base_test_with_meta(self, model: Any, expected_serializer):
         serializer = self.registry.find_serializer_by_type(type(model))

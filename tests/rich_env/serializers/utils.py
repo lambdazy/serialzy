@@ -1,7 +1,7 @@
 import tempfile
 from typing import Any
 
-from serialzy.api import Serializer
+from serialzy.api import Serializer, UserMeta
 from serialzy.serializers.base_model import ModelBaseSerializer
 
 
@@ -12,6 +12,19 @@ def serialize_and_deserialize(serializer: Serializer, var: Any) -> Any:
         file.seek(0)
         deserialized = serializer.deserialize(file)
     return deserialized
+
+
+def serialize_and_deserialize_with_user_meta(
+    serializer: Serializer,
+    var: Any,
+    user_meta: UserMeta,
+) -> UserMeta:
+    with tempfile.TemporaryFile() as file:
+        serializer.serialize(var, file, user_meta)
+        file.flush()
+        file.seek(0)
+        deserialized_meta = serializer.deserialize_user_meta(file)
+    return deserialized_meta
 
 
 def serialize_and_deserialize_with_meta(model_serializer: ModelBaseSerializer, var: Any) -> Any:
