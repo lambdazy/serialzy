@@ -39,8 +39,9 @@ class VersionBoundary:
 class Serializer(abc.ABC):
     HEADER_BYTES = 'serialzy'.encode('utf-8')
     HEADER_BYTES_LEN = len(HEADER_BYTES)
+    _USER_META_KEY = 'user-meta'
 
-    def serialize(self, obj: Any, dest: BinaryIO) -> None:
+    def serialize(self, obj: Any, dest: BinaryIO, user_meta: Optional[Dict[str, Any]] = None) -> None:
         """
         :param obj: object to serialize into bytes
         :param dest: serialized obj is written into dest
@@ -51,7 +52,7 @@ class Serializer(abc.ABC):
         # check that obj type is valid
         self._check_type(typ)
         # write schema header
-        self._write_schema(typ, dest)
+        self._write_schema(typ, dest, user_meta)
         # write serialized data
         self._serialize(obj, dest)
 
@@ -160,13 +161,23 @@ class Serializer(abc.ABC):
         data_format = schema.data_format
         return data_format
 
+    @classmethod
+    def deserialize_user_meta(cls, source: BinaryIO) -> Dict[str, Any]:
+        schema = cls._deserialize_schema(source)
+        user_meta = {}
+        if cls._USER_META_KEY in schema.meta:
+            user_meta = json.loads(schema.meta[cls._USER_META_KEY])
+        return user_meta
+
     def _deserialize_type(self, source: BinaryIO) -> Type:
         schema = self._deserialize_schema(source)
         typ = self.resolve(schema)
         return typ
 
-    def _write_schema(self, typ: Type, dest: BinaryIO) -> None:
+    def _write_schema(self, typ: Type, dest: BinaryIO, user_meta: Optional[Dict[str, Any]] = None) -> None:
         schema = self.schema(typ)
+        if user_meta is not None:
+            schema.meta[self._USER_META_KEY] = json.dumps(user_meta)
         schema_json = json.dumps(dataclasses.asdict(schema))
         schema_bytes = schema_json.encode('utf-8')
         header_len = len(schema_bytes)

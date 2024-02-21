@@ -23,6 +23,17 @@ class CatboostPoolSerializationTests(ModelBaseSerializerTests):
         deserialized_pool = self.base_test(self.pool, CatboostPoolSerializer)
         self.assertEqual(self.pool.get_weight(), deserialized_pool.get_weight())
 
+    def test_serialization_with_user_meta(self):
+        self.pool.quantize()
+        expected_meta = {'field': 'value'}
+        actual_meta = self.base_test_with_user_meta(self.pool, CatboostPoolSerializer, expected_meta)
+        self.assertEqual(expected_meta, actual_meta)
+
+    def test_serialization_without_user_meta(self):
+        self.pool.quantize()
+        actual_meta = self.base_test_with_user_meta(self.pool, CatboostPoolSerializer, None)
+        self.assertEqual({}, actual_meta)
+
     def test_serialization_with_meta(self):
         self.pool.quantize()
         deserialized_pool = self.base_test_with_meta(self.pool, CatboostPoolSerializer)

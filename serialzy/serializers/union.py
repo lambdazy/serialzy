@@ -22,12 +22,12 @@ class UnionSerializerBase(Serializer, ABC):
     def __init__(self, registry: SerializerRegistry):
         self._registry = registry
 
-    def serialize(self, obj: Any, dest: BinaryIO) -> None:
+    def serialize(self, obj: Any, dest: BinaryIO, user_meta: Optional[Dict[str, Any]] = None) -> None:
         typ = get_type(obj)
         serializer = self._registry.find_serializer_by_type(typ)
         if serializer is None:
             raise ValueError(f'Cannot find serializer for type {typ}')
-        serializer.serialize(obj, dest)
+        serializer.serialize(obj, dest, user_meta)
 
     def _serialize(self, obj: Any, dest: BinaryIO) -> None:
         """
