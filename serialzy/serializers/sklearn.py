@@ -23,7 +23,7 @@ class SciKitLearnSerializer(ModelBaseSerializer):
 
     def _serialize(self, obj: Any, dest: BinaryIO) -> None:
         if not isinstance(obj, self._get_supported_types()):
-            raise ValueError(f"Attempt to serialize unsupported SciKit-Learn tree model {__name__}")
+            raise ValueError(f"Attempt to serialize unsupported SciKit-Learn model {__name__}")
 
         def save_model(filename):
             with open(filename, "wb") as f:
