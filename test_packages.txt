@@ -13,3 +13,4 @@ onnx<=1.13.0; python_version < '3.10'
 onnx; python_version >= '3.10'
 onnxruntime<=1.11.0; python_version < '3.10'
 onnxruntime; python_version >= '3.10'
+scikit-learn>=1.0,<2.0.0
