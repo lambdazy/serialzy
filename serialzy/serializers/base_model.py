@@ -97,8 +97,9 @@ def __unpack_model(source: IO[bytes], destination: IO[bytes]) -> None:
 class ModelBaseSerializer(DefaultSchemaSerializerByReference, ABC):
     META_FILE_NAME = 'meta.json'
 
-    def __init__(self, module: str, logger_name: str):
+    def __init__(self, module: str, logger_name: str, *, package: Optional[str] = None):
         self.module = module
+        self.package = package if package is not None else module
         self.logger = logging.getLogger(logger_name)
 
     @abstractmethod
@@ -132,8 +133,8 @@ class ModelBaseSerializer(DefaultSchemaSerializerByReference, ABC):
         typ = super().resolve(schema)
         if self.module not in schema.meta:
             self.logger.warning(f'No {self.module} version in meta')
-        elif version.parse(schema.meta[self.module]) > version.parse(cached_installed_packages[self.module]):
-            self.logger.warning(f'Installed version of {self.module} {cached_installed_packages[self.module]} '
+        elif version.parse(schema.meta[self.module]) > version.parse(cached_installed_packages[self.package]):
+            self.logger.warning(f'Installed version of {self.module} {cached_installed_packages[self.package]} '
                                 f'is older than used for serialization {schema.meta[self.module]}')
         return typ
 
