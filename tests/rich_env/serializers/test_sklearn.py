@@ -99,6 +99,29 @@ class GradientBoostingRegressorSklearnModelSerializationTests(BaseSklearnModelSe
         return super().base_test_invalid_types()
 
 
+class IsolationForestSklearnModelSerializationTests(BaseSklearnModelSerializationTests):
+    def _get_model(self):
+        return skle.IsolationForest()
+
+    def test_serialization(self):
+        return super().base_test_serialization()
+
+    def test_unpack(self):
+        return super().base_test_unpack()
+
+    def test_serialization_with_meta(self):
+        return super().base_test_serialization_with_meta()
+
+    def test_schema(self):
+        return super().base_test_schema()
+
+    def test_resolve(self):
+        return super().base_test_resolve()
+
+    def test_invalid_types(self):
+        return super().base_test_invalid_types()
+
+
 class RandomForestRegressorSklearnModelSerializationTests(BaseSklearnModelSerializationTests):
     def _get_model(self):
         return skle.RandomForestRegressor()
