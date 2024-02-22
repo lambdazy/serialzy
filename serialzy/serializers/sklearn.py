@@ -21,7 +21,7 @@ class SciKitLearnSerializer(ModelBaseSerializer):
         return model_path
 
     def _serialize(self, obj: Any, dest: BinaryIO) -> None:
-        if not isinstance(obj, SciKitLearnSerializer._get_supported_types()):
+        if not isinstance(obj, self._get_supported_types()):
             raise ValueError(f"Attempt to serialize unsupported SciKit-Learn model {__name__}")
 
         def save_model(filename):
@@ -41,7 +41,7 @@ class SciKitLearnSerializer(ModelBaseSerializer):
         return deserialize_from_file(source, load_model)
 
     def _types_filter(self, typ: Type) -> bool:
-        return typ in SciKitLearnSerializer._get_supported_types()
+        return typ in self._get_supported_types()
 
     def data_format(self) -> str:
         return 'skl'
