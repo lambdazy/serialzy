@@ -99,6 +99,9 @@ class ModelBaseSerializer(DefaultSchemaSerializerByReference, ABC):
 
     def __init__(self, module: str, logger_name: str, *, package: Optional[str] = None):
         self.module = module
+        # package is the name of package in PyPI.
+        # It is often the same as module but can differ
+        # For example package 'scikit-learn' provides module 'sklearn'
         self.package = package if package is not None else module
         self.logger = logging.getLogger(logger_name)
 

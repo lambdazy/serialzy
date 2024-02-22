@@ -1,191 +1,79 @@
-# noinspection PyPackageRequirements
 import pickle
 import sklearn.ensemble as skle
-# noinspection PyPackageRequirements
 import numpy as np
-# noinspection PyPackageRequirements
 from sklearn import datasets
-# noinspection PyPackageRequirements
 from sklearn.model_selection import train_test_split
 
 from serialzy.serializers.sklearn import SciKitLearnSerializer
 from tests.rich_env.serializers.test_base_model import ModelBaseSerializerTests
 
 
-class BaseSklearnModelSerializationTests(ModelBaseSerializerTests):
+class SklearnModelSerializationTests(ModelBaseSerializerTests):
     def setUp(self):
         self.initialize("sklearn")
 
         dataset = datasets.load_wine()
         x = dataset.data
         y = dataset.target
-        x_train, self.x_test, y_train, _ = train_test_split(x, y, test_size=0.30)
-        self.dt = self.x_test
+        x_train, x_test, y_train, _ = train_test_split(x, y, test_size=0.30)
+        self.dt = x_test
 
-        self.model = self._get_model()
-        self.model.fit(x_train, y_train)
+        self.models = [
+            skle.GradientBoostingRegressor(init='zero'),
+            skle.GradientBoostingRegressor(init='zero'),
+            skle.IsolationForest(),
+            skle.ExtraTreesClassifier(),
+            skle.ExtraTreesRegressor(),
+            skle.RandomForestRegressor()
+        ]
 
-    def _get_model(self):
-        return None
+        for model in self.models:
+            model.fit(x_train, y_train)
 
-    def base_test_serialization(self):
-        deserialized_model = self.base_test(self.model, SciKitLearnSerializer)
-        self.assertTrue(np.allclose(self.model.predict(self.x_test), deserialized_model.predict(self.dt)))
+    def test_serialization(self):
+        for model in self.models:
+            self._test_serialization(model)
 
-    def base_test_unpack(self):
-        with self.base_unpack_test(self.model, SciKitLearnSerializer) as test_dir_name:
+    def _test_serialization(self, model):
+        deserialized_model = self.base_test(model, SciKitLearnSerializer)
+        self.assertTrue(np.allclose(model.predict(self.dt), deserialized_model.predict(self.dt)))
+
+    def test_unpack(self):
+        for model in self.models:
+            self._test_unpack(model)
+
+    def _test_unpack(self, model):
+        with self.base_unpack_test(model, SciKitLearnSerializer) as test_dir_name:
             with open(test_dir_name + "/model.pickle", "rb") as f:
                 deserialized_model = pickle.load(f)
 
-        self.assertTrue(np.allclose(self.model.predict(self.x_test), deserialized_model.predict(self.dt)))
-
-    def base_test_serialization_with_meta(self):
-        deserialized_model = self.base_test_with_meta(self.model, SciKitLearnSerializer)
-        self.assertTrue(np.allclose(self.model.predict(self.x_test), deserialized_model.predict(self.dt)))
-
-    def base_test_schema(self):
-        self.base_schema('skl', type(self.model))
-
-    def base_test_resolve(self):
-        self.base_resolve('skl', type(self.model))
-
-    def base_test_invalid_types(self):
-        self.base_invalid_types(self.model, type(self.model))
-
-
-class GradientBoostingClassifierSklearnModelSerializationTests(BaseSklearnModelSerializationTests):
-    def _get_model(self):
-        return skle.GradientBoostingClassifier(init='zero')
-
-    def test_serialization(self):
-        return super().base_test_serialization()
-
-    def test_unpack(self):
-        return super().base_test_unpack()
+        self.assertTrue(np.allclose(model.predict(self.dt), deserialized_model.predict(self.dt)))
 
     def test_serialization_with_meta(self):
-        return super().base_test_serialization_with_meta()
+        for model in self.models:
+            self._test_serialization_with_meta(model)
+
+    def _test_serialization_with_meta(self, model):
+        deserialized_model = self.base_test_with_meta(model, SciKitLearnSerializer)
+        self.assertTrue(np.allclose(model.predict(self.dt), deserialized_model.predict(self.dt)))
 
     def test_schema(self):
-        return super().base_test_schema()
+        for model in self.models:
+            self._test_schema(model)
+
+    def _test_schema(self, model):
+        self.base_schema('skl', type(model))
 
     def test_resolve(self):
-        return super().base_test_resolve()
+        for model in self.models:
+            self._test_resolve(model)
+
+    def _test_resolve(self, model):
+        self.base_resolve('skl', type(model))
 
     def test_invalid_types(self):
-        return super().base_test_invalid_types()
+        for model in self.models:
+            self._test_invalid_types(model)
 
-
-class GradientBoostingRegressorSklearnModelSerializationTests(BaseSklearnModelSerializationTests):
-    def _get_model(self):
-        return skle.GradientBoostingRegressor(init='zero')
-
-    def test_serialization(self):
-        return super().base_test_serialization()
-
-    def test_unpack(self):
-        return super().base_test_unpack()
-
-    def test_serialization_with_meta(self):
-        return super().base_test_serialization_with_meta()
-
-    def test_schema(self):
-        return super().base_test_schema()
-
-    def test_resolve(self):
-        return super().base_test_resolve()
-
-    def test_invalid_types(self):
-        return super().base_test_invalid_types()
-
-
-class IsolationForestSklearnModelSerializationTests(BaseSklearnModelSerializationTests):
-    def _get_model(self):
-        return skle.IsolationForest()
-
-    def test_serialization(self):
-        return super().base_test_serialization()
-
-    def test_unpack(self):
-        return super().base_test_unpack()
-
-    def test_serialization_with_meta(self):
-        return super().base_test_serialization_with_meta()
-
-    def test_schema(self):
-        return super().base_test_schema()
-
-    def test_resolve(self):
-        return super().base_test_resolve()
-
-    def test_invalid_types(self):
-        return super().base_test_invalid_types()
-
-
-class RandomForestRegressorSklearnModelSerializationTests(BaseSklearnModelSerializationTests):
-    def _get_model(self):
-        return skle.RandomForestRegressor()
-
-    def test_serialization(self):
-        return super().base_test_serialization()
-
-    def test_unpack(self):
-        return super().base_test_unpack()
-
-    def test_serialization_with_meta(self):
-        return super().base_test_serialization_with_meta()
-
-    def test_schema(self):
-        return super().base_test_schema()
-
-    def test_resolve(self):
-        return super().base_test_resolve()
-
-    def test_invalid_types(self):
-        return super().base_test_invalid_types()
-
-
-class ExtraTreesClassifierSklearnModelSerializationTests(BaseSklearnModelSerializationTests):
-    def _get_model(self):
-        return skle.ExtraTreesClassifier()
-
-    def test_serialization(self):
-        return super().base_test_serialization()
-
-    def test_unpack(self):
-        return super().base_test_unpack()
-
-    def test_serialization_with_meta(self):
-        return super().base_test_serialization_with_meta()
-
-    def test_schema(self):
-        return super().base_test_schema()
-
-    def test_resolve(self):
-        return super().base_test_resolve()
-
-    def test_invalid_types(self):
-        return super().base_test_invalid_types()
-
-
-class ExtraTreesRegressorSklearnModelSerializationTests(BaseSklearnModelSerializationTests):
-    def _get_model(self):
-        return skle.ExtraTreesRegressor()
-
-    def test_serialization(self):
-        return super().base_test_serialization()
-
-    def test_unpack(self):
-        return super().base_test_unpack()
-
-    def test_serialization_with_meta(self):
-        return super().base_test_serialization_with_meta()
-
-    def test_schema(self):
-        return super().base_test_schema()
-
-    def test_resolve(self):
-        return super().base_test_resolve()
-
-    def test_invalid_types(self):
-        return super().base_test_invalid_types()
+    def _test_invalid_types(self, model):
+        self.base_invalid_types(model, type(model))

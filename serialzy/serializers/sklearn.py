@@ -11,7 +11,6 @@ from serialzy.serializers.base_model import (
 )
 
 
-# noinspection PyPackageRequirements
 class SciKitLearnSerializer(ModelBaseSerializer):
     def __init__(self):
         super().__init__("sklearn", __name__, package="scikit-learn")
@@ -22,7 +21,7 @@ class SciKitLearnSerializer(ModelBaseSerializer):
         return model_path
 
     def _serialize(self, obj: Any, dest: BinaryIO) -> None:
-        if not isinstance(obj, self._get_supported_types()):
+        if not isinstance(obj, SciKitLearnSerializer._get_supported_types()):
             raise ValueError(f"Attempt to serialize unsupported SciKit-Learn model {__name__}")
 
         def save_model(filename):
@@ -42,9 +41,13 @@ class SciKitLearnSerializer(ModelBaseSerializer):
         return deserialize_from_file(source, load_model)
 
     def _types_filter(self, typ: Type) -> bool:
-        return typ in self._get_supported_types()
+        return typ in SciKitLearnSerializer._get_supported_types()
 
-    def _get_supported_types(self) -> Tuple[Type, ...]:
+    def data_format(self) -> str:
+        return 'skl'
+
+    @staticmethod
+    def _get_supported_types() -> Tuple[Type, ...]:
         import sklearn.ensemble as skle  # type: ignore
         return (
             skle.GradientBoostingClassifier,
@@ -54,6 +57,3 @@ class SciKitLearnSerializer(ModelBaseSerializer):
             skle.ExtraTreesClassifier,
             skle.ExtraTreesRegressor,
         )
-
-    def data_format(self) -> str:
-        return 'skl'
